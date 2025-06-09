@@ -12,13 +12,11 @@
       height: 100%;
       background-color: #ece5dd;
     }
-
     body {
       display: flex;
       justify-content: center;
       align-items: center;
     }
-
     .chat-container {
       width: 100%;
       height: 100dvh;
@@ -28,7 +26,6 @@
       flex-direction: column;
       box-shadow: 0 0 10px rgba(0,0,0,0.2);
     }
-
     .chat-header {
       background-color: #075E54;
       padding: 10px 15px;
@@ -36,7 +33,6 @@
       align-items: center;
       color: white;
     }
-
     .chat-header img {
       width: 45px;
       height: 45px;
@@ -44,12 +40,10 @@
       margin-right: 12px;
       object-fit: cover;
     }
-
     .chat-header .name {
       font-size: 18px;
       font-weight: bold;
     }
-
     .chat-body {
       flex: 1;
       padding: 15px;
@@ -58,7 +52,6 @@
       display: flex;
       flex-direction: column;
     }
-
     .message {
       max-width: 75%;
       padding: 10px 14px;
@@ -68,26 +61,22 @@
       line-height: 1.4;
       word-wrap: break-word;
     }
-
     .user {
       align-self: flex-end;
       background-color: #dcf8c6;
       border-bottom-right-radius: 0;
     }
-
     .bot {
       align-self: flex-start;
       background-color: white;
       border-bottom-left-radius: 0;
     }
-
     .chat-footer {
       display: flex;
       padding: 8px 10px;
       background-color: #fff;
       border-top: 1px solid #ccc;
     }
-
     .chat-footer input {
       flex: 1;
       padding: 12px;
@@ -98,7 +87,6 @@
       background-color: #f0f0f0;
       outline: none;
     }
-
     .chat-footer button {
       background-color: #075E54;
       color: white;
@@ -108,18 +96,15 @@
       border-radius: 20px;
       cursor: pointer;
     }
-
     .chat-footer button:hover {
       background-color: #0b7a67;
     }
-
     img.qr {
       width: 200px;
       margin-top: 10px;
       border-radius: 4px;
       border: 1px solid #ccc;
     }
-
     .product-option {
       margin: 10px 0;
       padding: 10px;
@@ -128,21 +113,17 @@
       border: 1px solid #ddd;
       cursor: pointer;
     }
-
     .product-option:hover {
       background-color: #e9e9e9;
     }
-
     .product-title {
       font-weight: bold;
       color: #075E54;
     }
-
     .product-price {
       color: #25D366;
       font-weight: bold;
     }
-
     .payment-info {
       margin-top: 10px;
       padding: 10px;
@@ -150,11 +131,9 @@
       border-radius: 8px;
       font-size: 14px;
     }
-
     .payment-info p {
       margin: 5px 0;
     }
-
     .payment-confirm {
       margin-top: 10px;
       padding: 8px 15px;
@@ -164,11 +143,9 @@
       border-radius: 20px;
       cursor: pointer;
     }
-
     .payment-confirm:hover {
       background-color: #128C7E;
     }
-
     .loading {
       display: inline-block;
       width: 20px;
@@ -178,7 +155,6 @@
       border-top-color: #075E54;
       animation: spin 1s ease-in-out infinite;
     }
-
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
@@ -202,11 +178,7 @@
   </div>
 
   <script>
-    // CHAVE E URL DA GEMINI
-    const GEMINI_API_KEY = 'AIzaSyBZWq79odwHX5NnccXU_1Y9_SSYAAuPg3Q';
-    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
-
-    let selectedProduct = null;
+    const PROXY_URL = 'https://script.google.com/macros/s/SEU_ID_AQUI/exec';
     let isWaitingResponse = false;
 
     function handleKeyPress(event) {
@@ -217,7 +189,6 @@
 
     async function sendMessage() {
       if (isWaitingResponse) return;
-      
       const input = document.getElementById("userInput");
       const text = input.value.trim();
       if (!text) return;
@@ -228,95 +199,43 @@
       toggleLoading(true);
 
       try {
-        // chamada direta GEMINI (teste)
-        const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+        const res = await fetch(PROXY_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text }] }]
-          })
+          body: JSON.stringify({ text })
         });
         const data = await res.json();
 
         if (data.error) {
-          appendMessage("bot", "❌ Erro Gemini: " + data.error.message);
+          appendMessage("bot", "❌ Erro: " + data.error);
         } else {
-          const botText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta';
-          appendMessage("bot", botText);
+          appendMessage("bot", data.response);
         }
-
-      } catch (error) {
-        console.error("Error:", error);
-        appendMessage("bot", "❌ Erro ao conectar Gemini.");
+      } catch (err) {
+        appendMessage("bot", "❌ Falha na conexão.");
       } finally {
         isWaitingResponse = false;
         toggleLoading(false);
       }
     }
 
-    // As demais funções continuam idênticas
-    function showProductOptions(products) {
-      const chatBody = document.getElementById("chatBody");
-      const optionsDiv = document.createElement("div");
-      optionsDiv.className = "message bot";
-      
-      let optionsHTML = '<p>Por favor, escolha uma opção:</p>';
-      products.forEach((product, index) => {
-        optionsHTML += `
-          <div class="product-option" onclick="selectProduct(${index})">
-            <div class="product-title">${product.title}</div>
-            <div class="product-price">Valor: ${product.price}</div>
-          </div>
-        `;
-      });
-      
-      optionsDiv.innerHTML = optionsHTML;
-      chatBody.appendChild(optionsDiv);
-      scrollToBottom();
-    }
-
-    async function selectProduct(index) {
-      isWaitingResponse = true;
-      toggleLoading(true);
-      try {
-        const data = await fetchSelect(index);
-        // restante do tratamento...
-      } catch {
-        appendMessage("bot", "❌ Erro ao processar seleção.");
-      } finally {
-        isWaitingResponse = false;
-        toggleLoading(false);
-      }
-    }
-
-    // placeholder para fetchSelect – mantenha seu proxy ou implemente igual acima
-    async function fetchSelect(index) {
-      // ... seu código
-      return {};
-    }
-
-    function appendMessage(sender, text) {
+    function appendMessage(sender, content) {
       const chatBody = document.getElementById("chatBody");
       const msg = document.createElement("div");
-      msg.className = "message " + sender;
-      msg.innerHTML = text;
+      msg.className = `message ${sender}`;
+      msg.textContent = content;
       chatBody.appendChild(msg);
-      scrollToBottom();
-    }
-
-    function scrollToBottom() {
-      const chatBody = document.getElementById("chatBody");
       chatBody.scrollTop = chatBody.scrollHeight;
     }
 
     function toggleLoading(show) {
-      const button = document.getElementById("sendButton");
+      const btn = document.getElementById("sendButton");
       if (show) {
-        button.innerHTML = '<div class="loading"></div>';
-        button.disabled = true;
+        btn.innerHTML = '<div class="loading"></div>';
+        btn.disabled = true;
       } else {
-        button.textContent = 'Enviar';
-        button.disabled = false;
+        btn.textContent = 'Enviar';
+        btn.disabled = false;
       }
     }
   </script>
