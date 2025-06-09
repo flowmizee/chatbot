@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>Chat Web Estilo WhatsApp</title>
   <style>
-    /* (MANTENHA TODOS OS ESTILOS EXATAMENTE COMO ESTAVAM) */
     html, body {
       margin: 0;
       padding: 0;
@@ -72,6 +71,38 @@
       background-color: white;
       border-bottom-left-radius: 0;
     }
+    .typing-indicator {
+      align-self: flex-start;
+      background-color: white;
+      border-bottom-left-radius: 0;
+      max-width: 50px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      padding: 5px 10px;
+    }
+    .typing-indicator span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin: 0 1px;
+      background-color: #999;
+      border-radius: 50%;
+      animation: blink 1.4s infinite both;
+    }
+    .typing-indicator span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    .typing-indicator span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    @keyframes blink {
+      0%, 80%, 100% { opacity: 0; }
+      40% { opacity: 1; }
+    }
     .chat-footer {
       display: flex;
       padding: 8px 10px;
@@ -100,53 +131,6 @@
     .chat-footer button:hover {
       background-color: #0b7a67;
     }
-    img.qr {
-      width: 200px;
-      margin-top: 10px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-    .product-option {
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 8px;
-      background-color: #f8f8f8;
-      border: 1px solid #ddd;
-      cursor: pointer;
-    }
-    .product-option:hover {
-      background-color: #e9e9e9;
-    }
-    .product-title {
-      font-weight: bold;
-      color: #075E54;
-    }
-    .product-price {
-      color: #25D366;
-      font-weight: bold;
-    }
-    .payment-info {
-      margin-top: 10px;
-      padding: 10px;
-      background-color: #f0f0f0;
-      border-radius: 8px;
-      font-size: 14px;
-    }
-    .payment-info p {
-      margin: 5px 0;
-    }
-    .payment-confirm {
-      margin-top: 10px;
-      padding: 8px 15px;
-      background-color: #25D366;
-      color: white;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-    }
-    .payment-confirm:hover {
-      background-color: #128C7E;
-    }
     .loading {
       display: inline-block;
       width: 20px;
@@ -168,9 +152,7 @@
       <div class="name">Chef Larissa Campos</div>
     </div>
 
-    <div class="chat-body" id="chatBody">
-      <!-- Conversa começa vazia -->
-    </div>
+    <div class="chat-body" id="chatBody"></div>
 
     <div class="chat-footer">
       <input type="text" id="userInput" placeholder="Digite sua mensagem..." onkeypress="handleKeyPress(event)">
@@ -179,10 +161,16 @@
   </div>
 
   <script>
-    const GEMINI_API_KEY = 'AIzaSyBZWq79odwHX5NnccXU_1Y9_SSYAAuPg3Q'; // Chave no front-end
-    const SCRIPT_URL = 'https://script.google.com/macros/s/SUA_URL_DO_APPS_SCRIPT/exec';
-    let selectedProduct = null;
+    const GEMINI_API_KEY = 'AIzaSyBZWq79odwHX5NnccXU_1Y9_SSYAAuPg3Q';
+    const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+
     let isWaitingResponse = false;
+    let typingEl = null;
+
+    window.onload = async () => {
+      await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Olá tudo bem? Eu me chamo Larissa Campos, fico feliz que esteja interessada na minhas Receitinhas saudáveis.");
+      await simulateTyping("🍞Você está diante da oportunidade de aprender a fazer receitas sem glúten incríveis, fofinhos e deliciosos, que vão surpreender todo mundo!<br><br>- 50 receitas exclusivas<br>- Sem Glúten e Sem Lactose<br>- Ingredientes de fácil acesso<br>- ⁠Suporte no Whatsapp<br>- Acesso Vitalício<br><br>🔴Tudo isso por apenas <strong>R$ 9,90</strong>!");
+    };
 
     function handleKeyPress(event) {
       if (event.key === 'Enter' && !isWaitingResponse) {
@@ -192,217 +180,87 @@
 
     async function sendMessage() {
       if (isWaitingResponse) return;
-      
-      const input = document.getElementById("userInput");
-      const text = input.value.trim();
+
+      const inputEl = document.getElementById("userInput");
+      const text = inputEl.value.trim();
       if (!text) return;
 
       appendMessage("user", text);
-      input.value = "";
+      inputEl.value = "";
       isWaitingResponse = true;
       toggleLoading(true);
+      showTypingIndicator();
 
       try {
-        // Verifica se é sobre produtos
-        if (/receit(a|as)|compr(a|ar)|produt(o|os)/i.test(text)) {
-          showProductOptions();
-        } else {
-          // Chama diretamente a API Gemini do front-end
-          const geminiResponse = await callGeminiAPI(text);
-          appendMessage("bot", geminiResponse);
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        appendMessage("bot", "❌ Erro ao conectar. Tente novamente.");
-      } finally {
-        isWaitingResponse = false;
-        toggleLoading(false);
-      }
-    }
-
-    function showProductOptions() {
-      const chatBody = document.getElementById("chatBody");
-      const optionsDiv = document.createElement("div");
-      optionsDiv.className = "message bot";
-      
-      const products = [
-        {
-          title: "✅ 50 Receitas de Pães Sem Glúten",
-          price: "R$ 9,99",
-          id: "produto1"
-        },
-        {
-          title: "✅ Pacote Completo Guia Receitas Saudáveis",
-          price: "R$ 19,99",
-          id: "produto2"
-        }
-      ];
-      
-      let optionsHTML = '<p>Escolha uma opção:</p>';
-      products.forEach((product, index) => {
-        optionsHTML += `
-          <div class="product-option" onclick="selectProduct('${product.id}')">
-            <div class="product-title">${product.title}</div>
-            <div class="product-price">${product.price}</div>
-          </div>
-        `;
-      });
-      
-      optionsDiv.innerHTML = optionsHTML;
-      chatBody.appendChild(optionsDiv);
-      scrollToBottom();
-    }
-
-    async function selectProduct(productId) {
-      isWaitingResponse = true;
-      toggleLoading(true);
-      
-      try {
-        const url = `${SCRIPT_URL}?action=selectProduct&id=${productId}`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.error) {
-          appendMessage("bot", "❌ Erro: " + data.error);
-        } else {
-          const paymentInfo = `
-            <div class="payment-info">
-              <p><strong>Chave Pix:</strong> ${data.pixKey}</p>
-              <p><strong>Recebedor:</strong> ${data.recipientName}</p>
-              <p><strong>Valor:</strong> ${data.amount}</p>
-              <p><strong>Descrição:</strong> ${data.description}</p>
-            </div>
-            <button class="payment-confirm" onclick="confirmPayment('${data.transactionId}')">
-              Confirmar Pagamento
-            </button>
-          `;
-          
-          appendMessage("bot", paymentInfo);
-          
-          if (data.qrCode) {
-            appendQRCode(data.qrCode);
-          }
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        appendMessage("bot", "❌ Erro ao selecionar produto.");
-      } finally {
-        isWaitingResponse = false;
-        toggleLoading(false);
-      }
-    }
-
-    async function confirmPayment(transactionId) {
-      isWaitingResponse = true;
-      toggleLoading(true);
-      
-      try {
-        const url = `${SCRIPT_URL}?action=confirmPayment&id=${transactionId}`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.success) {
-          appendMessage("bot", "✅ Pagamento confirmado! Preparando seu material...");
-          await getProductContent(transactionId);
-        } else {
-          appendMessage("bot", "❌ Pagamento não confirmado. Tente novamente.");
-        }
-      } catch (error) {
-        console.error("Error:", error);
-        appendMessage("bot", "❌ Erro ao confirmar pagamento.");
-      } finally {
-        isWaitingResponse = false;
-        toggleLoading(false);
-      }
-    }
-
-    async function getProductContent(transactionId) {
-      isWaitingResponse = true;
-      toggleLoading(true);
-      
-      try {
-        // Determina qual produto foi comprado
-        const productType = transactionId.includes("produto1") ? 
-          "50 receitas de pães sem glúten" : 
-          "pacote completo de guia de receitas saudáveis";
-        
-        const prompt = `Gere 3 exemplos de receitas do produto "${productType}". 
-                      Formate em HTML para web. Inclua título, ingredientes e modo de preparo.`;
-        
-        // Chama a API Gemini diretamente do front-end
-        const content = await callGeminiAPI(prompt);
-        appendMessage("bot", content || "✅ Seu material foi enviado para seu email!");
-      } catch (error) {
-        console.error("Error:", error);
-        appendMessage("bot", "✅ Seu material será enviado em breve!");
-      } finally {
-        isWaitingResponse = false;
-        toggleLoading(false);
-      }
-    }
-
-    async function callGeminiAPI(prompt) {
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+        const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `Você é a Chef Larissa Campos. ${prompt} Responda de forma profissional e detalhada.`
-              }]
-            }]
+            contents: [{ parts: [{ text }] }]
           })
         });
-        
-        const data = await response.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível gerar a resposta.";
-      } catch (error) {
-        console.error("Erro na API Gemini:", error);
-        return "Desculpe, estou com dificuldades técnicas no momento.";
+
+        const data = await res.json();
+        hideTypingIndicator();
+
+        if (data.error) {
+          appendMessage("bot", "❌ Erro Gemini: " + data.error.message);
+        } else {
+          const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta';
+          await simulateTyping(reply);
+        }
+      } catch (err) {
+        console.error(err);
+        hideTypingIndicator();
+        appendMessage("bot", "❌ Falha na conexão com a API.");
+      } finally {
+        isWaitingResponse = false;
+        toggleLoading(false);
       }
     }
 
-    function appendMessage(sender, text) {
+    function appendMessage(sender, message) {
       const chatBody = document.getElementById("chatBody");
-      const msg = document.createElement("div");
-      msg.className = "message " + sender;
-      
-      if (typeof text === 'string') {
-        msg.textContent = text;
-      } else {
-        msg.innerHTML = text;
-      }
-      
-      chatBody.appendChild(msg);
-      scrollToBottom();
-    }
-
-    function appendQRCode(url) {
-      const chatBody = document.getElementById("chatBody");
-      const img = document.createElement("img");
-      img.src = url;
-      img.className = "qr";
-      chatBody.appendChild(img);
-      scrollToBottom();
-    }
-
-    function scrollToBottom() {
-      const chatBody = document.getElementById("chatBody");
+      const msgEl = document.createElement("div");
+      msgEl.className = `message ${sender}`;
+      msgEl.innerHTML = message;
+      chatBody.appendChild(msgEl);
       chatBody.scrollTop = chatBody.scrollHeight;
     }
 
     function toggleLoading(show) {
-      const button = document.getElementById("sendButton");
+      const btn = document.getElementById("sendButton");
       if (show) {
-        button.innerHTML = '<div class="loading"></div>';
-        button.disabled = true;
+        btn.innerHTML = '<div class="loading"></div>';
+        btn.disabled = true;
       } else {
-        button.textContent = 'Enviar';
-        button.disabled = false;
+        btn.textContent = 'Enviar';
+        btn.disabled = false;
       }
+    }
+
+    function showTypingIndicator() {
+      if (!typingEl) {
+        typingEl = document.createElement("div");
+        typingEl.className = "typing-indicator";
+        typingEl.innerHTML = "<span></span><span></span><span></span>";
+        document.getElementById("chatBody").appendChild(typingEl);
+        document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
+      }
+    }
+
+    function hideTypingIndicator() {
+      if (typingEl) {
+        typingEl.remove();
+        typingEl = null;
+      }
+    }
+
+    async function simulateTyping(message, delay = 2500) {
+      showTypingIndicator();
+      await new Promise(resolve => setTimeout(resolve, delay));
+      hideTypingIndicator();
+      appendMessage("bot", message);
     }
   </script>
 </body>
