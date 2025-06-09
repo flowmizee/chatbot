@@ -197,9 +197,11 @@
     <script>    
       const GEMINI_API_KEY = 'AIzaSyBZWq79odwHX5NnccXU_1Y9_SSYAAuPg3Q';    
       const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';    
+      const CHECKOUT_URL = 'https://pay.kiwify.com.br/68vs72A'; // Link de checkout direto
       let isWaitingResponse = false;    
       let typingEl = null;    
-      
+      let conversationStage = 0; // 0 = início, 1 = mostrou preview, 2 = mostrou botão de compra
+    
       window.onload = async () => {
         await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Olá tudo bem? Eu me chamo Larissa Campos, fico feliz que esteja interessada na minhas Receitinhas saudáveis.");
         await simulateTyping("🍞Você está diante da oportunidade de aprender a fazer receitas sem glúten incríveis, fofinhos e deliciosos, que vão surpreender todo mundo!<br><br>- 50 receitas exclusivas<br>- Sem Glúten e Sem Lactose<br>- Ingredientes de fácil acesso<br>- ⁠Suporte no Whatsapp<br>- Acesso Vitalício<br><br>🔴Tudo isso por apenas <strong>R$ 9,90</strong>!");
@@ -220,30 +222,30 @@
       }
       
       async function showPreviewImages() {
+        conversationStage = 1;
         const imagesHTML = `  
           <div style="margin-top: 10px;">  
             <p>Aqui está uma prévia do que você vai encontrar no ebook:</p>  
             <img src="capa.webp" alt="Capa do Ebook" class="preview-image">  
             <img src="sumario.webp" alt="Sumário" class="preview-image">  
             <p>😍 Impressionante, né? São 50 receitas incríveis!</p>
-            <p>Se interessou? Vou te enviar o link para compra:</p>
-            <button class="buy-button" onclick="handleBuyClick()">QUERO COMPRAR AGORA!</button>
+            <p>Se interessou? Clique no botão abaixo para garantir seu acesso:</p>
+            <button class="buy-button" onclick="redirectToCheckout()">QUERO COMPRAR AGORA!</button>
           </div>  
         `;
         await simulateTyping(imagesHTML);
       }
       
-      async function handleBuyClick() {
+      function redirectToCheckout() {
+        // Redireciona diretamente para a página de checkout
+        window.location.href = CHECKOUT_URL;
+      }
+
+      function handleBuyClick() {
         appendMessage("user", "QUERO COMPRAR AGORA!");
-        await simulateTyping(""); // Mostra o indicador de digitação
-        const buyMessage = `
-          🎉 Que maravilha! Você vai adorar essas receitas!
-          <br><br>
-          🔗 <strong>Link para compra:</strong> <a href="https://pay.hotmart.com/SEUCODIGOAQUI" target="_blank">https://pay.hotmart.com/SEUCODIGOAQUI</a>
-          <br><br>
-          Qualquer dúvida é só me chamar! Estou aqui para te ajudar 😊
-        `;
-        appendMessage("bot", buyMessage);
+        setTimeout(() => {
+          redirectToCheckout();
+        }, 1000);
       }
 
       function handleKeyPress(event) {
@@ -265,6 +267,21 @@
         toggleLoading(true);
         showTypingIndicator();
 
+        // Verifica se a mensagem do usuário pede para ver as imagens ou comprar
+        if (shouldShowPreview(text)) {
+          hideTypingIndicator();
+          await showPreviewImages();
+          isWaitingResponse = false;
+          toggleLoading(false);
+          return;
+        } else if (shouldShowBuyButton(text)) {
+          hideTypingIndicator();
+          await showBuyButton();
+          isWaitingResponse = false;
+          toggleLoading(false);
+          return;
+        }
+
         // Prompt fixo para manter o contexto da Chef Larissa
         const systemPrompt = `
         Você é a Chef Larissa Campos, especialista em receitas saudáveis sem glúten e sem lactose. 
@@ -277,14 +294,15 @@
         3. Foque nas receitas saudáveis sem glúten e sem lactose
         4. Sempre direcione para a venda do ebook de R$ 9,90
         5. Se perguntarem sobre preço, reforçar que são apenas R$ 9,90
-        6. Para dúvidas sobre pagamento, dizer que é via Hotmart com link seguro
+        6. Para dúvidas sobre pagamento, dizer que é via Kiwify com checkout seguro
         7. Se não souber responder, diga que vai pesquisar e retornar
+        8. NUNCA mostre links, apenas direcione para o botão de compra
         
         Exemplo de respostas:
         - "Essa receita está no meu ebook, é uma das mais pedidas!"
         - "Por apenas R$ 9,90 você leva 50 receitas incríveis"
         - "Todas as receitas são testadas e aprovadas por meus alunos"
-        - "O pagamento é seguro pelo Hotmart, posso te enviar o link"
+        - "O pagamento é seguro pelo Kiwify, clique no botão 'QUERO COMPRAR AGORA'"
         
         Histórico da conversa:
         - Você já mostrou a capa, sumário e uma receita de exemplo
@@ -310,6 +328,15 @@
           } else {        
             const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta';        
             await simulateTyping(reply);        
+            
+            // Se ainda não mostrou as imagens e a resposta sugere mostrar, exibe as imagens
+            if (conversationStage < 1 && shouldShowPreviewBasedOnResponse(reply)) {
+              await showPreviewImages();
+            }
+            // Se ainda não mostrou o botão de compra e a resposta sugere mostrar, exibe o botão
+            else if (conversationStage < 2 && shouldShowBuyButtonBasedOnResponse(reply)) {
+              await showBuyButton();
+            }
           }
 
         } catch (err) {
@@ -320,6 +347,57 @@
           isWaitingResponse = false;
           toggleLoading(false);
         }
+      }
+
+      function shouldShowPreview(message) {
+        const lowerMsg = message.toLowerCase();
+        return (
+          lowerMsg.includes('ver') || 
+          lowerMsg.includes('mostrar') || 
+          lowerMsg.includes('prévia') || 
+          lowerMsg.includes('previa') || 
+          lowerMsg.includes('exemplo') || 
+          lowerMsg.includes('imagem') || 
+          lowerMsg.includes('foto')
+        ) && conversationStage < 1;
+      }
+
+      function shouldShowBuyButton(message) {
+        const lowerMsg = message.toLowerCase();
+        return (
+          lowerMsg.includes('comprar') || 
+          lowerMsg.includes('compra') || 
+          lowerMsg.includes('quero') || 
+          lowerMsg.includes('adquirir') || 
+          lowerMsg.includes('link') || 
+          lowerMsg.includes('pagamento') ||
+          lowerMsg.includes('preço') ||
+          lowerMsg.includes('valor')
+        ) && conversationStage < 2;
+      }
+
+      function shouldShowPreviewBasedOnResponse(response) {
+        const lowerRes = response.toLowerCase();
+        return lowerRes.includes('mostrar') || lowerRes.includes('prévia') || lowerRes.includes('previa');
+      }
+
+      function shouldShowBuyButtonBasedOnResponse(response) {
+        const lowerRes = response.toLowerCase();
+        return lowerRes.includes('comprar') || lowerRes.includes('botão') || lowerRes.includes('pagamento');
+      }
+
+      async function showBuyButton() {
+        conversationStage = 2;
+        const buyMessage = `
+          🎉 Que maravilha! Você vai adorar essas receitas!
+          <br><br>
+          Clique no botão abaixo para garantir seu acesso imediato:
+          <br><br>
+          <button class="buy-button" onclick="redirectToCheckout()">QUERO COMPRAR AGORA!</button>
+          <br><br>
+          Qualquer dúvida é só me chamar! Estou aqui para te ajudar 😊
+        `;
+        await simulateTyping(buyMessage);
       }
 
       function appendMessage(sender, message) {
