@@ -1,268 +1,110 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chat Web Estilo WhatsApp</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', sans-serif;
-      height: 100%;
-      background-color: #ece5dd;
-    }
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .chat-container {
-      width: 100%;
-      height: 100dvh;
-      max-width: 430px;
-      background-color: #fff;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    }
-    .chat-header {
-      background-color: #075E54;
-      padding: 10px 15px;
-      display: flex;
-      align-items: center;
-      color: white;
-    }
-    .chat-header img {
-      width: 45px;
-      height: 45px;
-      border-radius: 50%;
-      margin-right: 12px;
-      object-fit: cover;
-    }
-    .chat-header .name {
-      font-size: 18px;
-      font-weight: bold;
-    }
-    .chat-body {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      background-color: #e5ddd5;
-      display: flex;
-      flex-direction: column;
-    }
-    .message {
-      max-width: 75%;
-      padding: 10px 14px;
-      margin-bottom: 8px;
-      font-size: 15px;
-      border-radius: 8px;
-      line-height: 1.4;
-      word-wrap: break-word;
-    }
-    .user {
-      align-self: flex-end;
-      background-color: #dcf8c6;
-      border-bottom-right-radius: 0;
-    }
-    .bot {
-      align-self: flex-start;
-      background-color: white;
-      border-bottom-left-radius: 0;
-    }
-    .chat-footer {
-      display: flex;
-      padding: 8px 10px;
-      background-color: #fff;
-      border-top: 1px solid #ccc;
-    }
-    .chat-footer input {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      font-size: 16px;
-      border-radius: 20px;
-      margin-right: 8px;
-      background-color: #f0f0f0;
-      outline: none;
-    }
-    .chat-footer button {
-      background-color: #075E54;
-      color: white;
-      border: none;
-      padding: 10px 16px;
-      font-size: 16px;
-      border-radius: 20px;
-      cursor: pointer;
-    }
-    .chat-footer button:hover {
-      background-color: #0b7a67;
-    }
-    img.qr {
-      width: 200px;
-      margin-top: 10px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-    .product-option {
-      margin: 10px 0;
-      padding: 10px;
-      border-radius: 8px;
-      background-color: #f8f8f8;
-      border: 1px solid #ddd;
-      cursor: pointer;
-    }
-    .product-option:hover {
-      background-color: #e9e9e9;
-    }
-    .product-title {
-      font-weight: bold;
-      color: #075E54;
-    }
-    .product-price {
-      color: #25D366;
-      font-weight: bold;
-    }
-    .payment-confirm {
-      margin-top: 10px;
-      padding: 8px 15px;
-      background-color: #25D366;
-      color: white;
-      border: none;
-      border-radius: 20px;
-      cursor: pointer;
-    }
-    .payment-confirm:hover {
-      background-color: #128C7E;
-    }
-    .loading {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255,255,255,.3);
-      border-radius: 50%;
-      border-top-color: #075E54;
-      animation: spin 1s ease-in-out infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
-</head>
-<body>
-  <div class="chat-container">
-    <div class="chat-header">
-      <img src="perfil.webp" alt="Perfil">
-      <div class="name">Chef Larissa Campos</div>
-    </div>
-    <div class="chat-body" id="chatBody"></div>
-    <div class="chat-footer">
-      <input type="text" id="userInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendMessage()">
-      <button onclick="sendMessage()" id="sendBtn">Enviar</button>
-    </div>
-  </div>
+const API_KEY = 'AIzaSyBZWq79odwHX5NnccXU_1Y9_SSYAAuPg3Q';
+const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
 
-  <script>
-    let busy = false;
+/**
+ * Responde a requisições HTTP GET e serve o HTML do cliente.
+ */
+function doGet() {
+  return HtmlService
+    .createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('Chat Web Estilo WhatsApp')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
 
-    function sendMessage() {
-      if (busy) return;
-      const inp = document.getElementById('userInput');
-      const txt = inp.value.trim();
-      if (!txt) return;
-      appendMsg('user', txt);
-      inp.value = '';
-      busy = true;
-      toggleLoading(true);
+/**
+ * Inclui arquivos separados (ex.: CSS/JS) no HTML.
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
 
-      google.script.run
-        .withSuccessHandler(res => {
-          if (res.error) appendMsg('bot', '❌ ' + res.error);
-          else {
-            if (res.response) appendMsg('bot', res.response);
-            if (res.products) showProducts(res.products);
-            if (res.qrCode) appendQRCode(res.qrCode);
-          }
-        })
-        .withFailureHandler(err => appendMsg('bot','❌ Erro de comunicação.'))
-        .handleChat(txt);
+/**
+ * Handler principal do chat.
+ */
+function handleChat(message) {
+  // lógica de produtos
+  if (/receita|comprar|produto/i.test(message)) {
+    return {
+      response: 'Temos estas opções disponíveis:',
+      products: [
+        { title: '✅ 50 Receitas de Pães Sem Glúten', price: 'R$ 9,99', description: '50 receitas exclusivas sem glúten' },
+        { title: '✅ Pacote Completo Guia Receitas Saudáveis', price: 'R$ 19,99', description: 'Mais de 100 receitas saudáveis' }
+      ]
+    };
+  }
 
-      toggleLoading(false);
-      busy = false;
-    }
+  // chamada à API Gemini
+  const prompt = `Você é a Chef Larissa Campos, especialista em culinária saudável. ` +
+                 `Responda de forma simpática e profissional a: "${message}" ` +
+                 `(Máximo 2 parágrafos). Se for sobre compras, ofereça nossas opções.`;
+  const text = callGeminiAPI(prompt);
+  return { response: text || 'Desculpe, não entendi. Poderia reformular?' };
+}
 
-    function showProducts(list) {
-      const b = document.getElementById('chatBody');
-      const div = document.createElement('div'); div.className='message bot';
-      div.innerHTML = '<p>Escolha uma opção:</p>' +
-        list.map((p,i)=>
-          `<div class="product-option" onclick="selectProduct(${i})">
-            <div class="product-title">${p.title}</div>
-            <div class="product-price">Valor: ${p.price}</div>
-          </div>`
-        ).join('');
-      b.appendChild(div);
-      b.scrollTop = b.scrollHeight;
-    }
+/**
+ * Seleção de produto.
+ */
+function handleSelectProduct(index) {
+  const products = [
+    { title: '50 Receitas de Pães Sem Glúten', price: 'R$ 9,99', pixKey: 'renimarfilho000@gmail.com', recipientName: 'Antonio Renimar Pinheiro Almeida', city: 'São Luís, MA', amount: 'R$ 9,99', description: '50 Receitas de Pães Sem Glúten' },
+    { title: 'Pacote Completo Guia Receitas Saudáveis', price: 'R$ 19,99', pixKey: 'renimarfilho000@gmail.com', recipientName: 'Antonio Renimar Pinheiro Almeida', city: 'São Luís, MA', amount: 'R$ 19,99', description: 'Pacote Completo Guia Receitas Saudáveis' }
+  ];
+  const sel = products[index];
+  if (!sel) return { error: 'Produto não encontrado' };
 
-    function selectProduct(idx) {
-      busy = true; toggleLoading(true);
-      google.script.run
-        .withSuccessHandler(data => {
-          if (data.error) appendMsg('bot', '❌ '+data.error);
-          else {
-            appendMsg('bot', `<p>Dados PIX:</p><div><strong>Chave:</strong> ${data.pixKey}</div><button class="payment-confirm" onclick="confirmPayment('${data.transactionId}')">Confirmar Pagamento</button>`);
-            if(data.qrCode) appendQRCode(data.qrCode);
-          }
-        })
-        .handleSelectProduct(idx);
-      busy = false; toggleLoading(false);
-    }
+  const qrData = {
+    pixKey: sel.pixKey,
+    merchantName: sel.recipientName,
+    merchantCity: sel.city.split(',')[0].trim(),
+    amount: parseFloat(sel.amount.replace('R$ ', '').replace(',', '.')),
+    description: sel.description,
+    txid: Utilities.getUuid().slice(0,25)
+  };
+  const qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(JSON.stringify(qrData))}`;
 
-    function confirmPayment(txid) {
-      busy=true; toggleLoading(true);
-      google.script.run
-        .withSuccessHandler(r=>{
-          appendMsg('bot','✅ Pagamento confirmado!');
-          fetchContent(txid);
-        })
-        .handleConfirmPayment(txid);
-    }
+  return { ...sel, qrCode: qrCode, transactionId: qrData.txid };
+}
 
-    function fetchContent(txid) {
-      google.script.run
-        .withSuccessHandler(r=>{
-          appendMsg('bot', r.content);
-          if(r.audioUrl) {
-            const a = document.createElement('audio'); a.controls=true; a.src=r.audioUrl; document.getElementById('chatBody').appendChild(a);
-          }
-        })
-        .handleGetProductContent(txid);
-      busy=false; toggleLoading(false);
-    }
+/**
+ * Confirmação de pagamento.
+ */
+function handleConfirmPayment(txid) {
+  Utilities.sleep(2000);
+  return { success: true, transactionId: txid, confirmationCode: 'PAY-' + Math.floor(Math.random()*1e6) };
+}
 
-    function appendMsg(cls, txt) {
-      const b = document.getElementById('chatBody');
-      const m = document.createElement('div'); m.className='message '+cls;
-      m.innerHTML = txt;
-      b.appendChild(m);
-      b.scrollTop = b.scrollHeight;
-    }
+/**
+ * Gera conteúdo do produto.
+ */
+function handleGetProductContent(txid) {
+  const type = txid.includes('gluten') ? '50 receitas de pães sem glúten' : 'pacote completo de guia de receitas saudáveis';
+  const prompt = `Gere 3 exemplos de receitas (dentre as ${type} compradas). Cada receita deve incluir título, ingredientes e modo de preparo em HTML.`;
+  try {
+    const html = callGeminiAPI(prompt);
+    return { content: html, audioUrl: `https://example.com/audio/${txid}.mp3` };
+  } catch (e) {
+    return { content: 'Seu material está pronto! Em breve envio por email.' };
+  }
+}
 
-    function appendQRCode(url) {
-      const img = new Image();
-      img.src = url;
-      img.className = 'qr';
-      document.getElementById('chatBody').appendChild(img);
-      img.scrollIntoView();
-    }
-
-    function toggleLoading(show) {
-      const btn = document.getElementById('sendBtn');
-      if (show) { btn.innerHTML = '<div class="loading"></div>'; btn.disabled = true; }
-      else { btn.textContent = 'Enviar'; btn.disabled = false; }
-    }
-  </script>
-</body>
-</html>
+/**
+ * Chama a API Gemini.
+ */
+function callGeminiAPI(prompt) {
+  const payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    safetySettings: [{ category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' }],
+    generationConfig: { maxOutputTokens: 2000 }
+  };
+  const opts = {
+    method: 'post',
+    contentType: 'application/json',
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+  const res = UrlFetchApp.fetch(`${BASE_URL}?key=${API_KEY}`, opts);
+  const j = JSON.parse(res.getContentText());
+  if (j.candidates?.[0]?.content?.parts?.[0]?.text) return j.candidates[0].content.parts[0].text;
+  throw new Error('Resposta inesperada da API');
+}
