@@ -119,6 +119,69 @@
       border-radius: 4px;
       border: 1px solid #ccc;
     }
+
+    .product-option {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      background-color: #f8f8f8;
+      border: 1px solid #ddd;
+      cursor: pointer;
+    }
+
+    .product-option:hover {
+      background-color: #e9e9e9;
+    }
+
+    .product-title {
+      font-weight: bold;
+      color: #075E54;
+    }
+
+    .product-price {
+      color: #25D366;
+      font-weight: bold;
+    }
+
+    .payment-info {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .payment-info p {
+      margin: 5px 0;
+    }
+
+    .payment-confirm {
+      margin-top: 10px;
+      padding: 8px 15px;
+      background-color: #25D366;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    .payment-confirm:hover {
+      background-color: #128C7E;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #075E54;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -129,43 +192,215 @@
     </div>
 
     <div class="chat-body" id="chatBody">
-      <div class="message bot">👋 Olá! Como posso te ajudar hoje?</div>
+      <!-- Conversa começa vazia -->
     </div>
 
     <div class="chat-footer">
-      <input type="text" id="userInput" placeholder="Mensagem">
-      <button onclick="sendMessage()">Enviar</button>
+      <input type="text" id="userInput" placeholder="Digite sua mensagem..." onkeypress="handleKeyPress(event)">
+      <button onclick="sendMessage()" id="sendButton">Enviar</button>
     </div>
   </div>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxipuQTfy1qRX75D_tTriU0PCpdY4mZDaJul-VSDNIuGTVioHIuOMYOdNg_E4yk3S8zlw/exec"; // 👈 substitua aqui
+    const scriptURL = "https://script.google.com/macros/s/AKfycbygutONDOiJxSowKXyPXuOaxGm6qkunpBRvy7MGnOAV6SSBwaT1hnSPGrP3u-LYGCna/exec"; // Substitua pela sua URL
+    let selectedProduct = null;
+    let isWaitingResponse = false;
+
+    // Adiciona tratamento CORS
+    function makeRequest(url, options) {
+      return fetch(url, {
+        ...options,
+        mode: 'cors',
+        headers: {
+          ...options.headers,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      }).then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      });
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === 'Enter' && !isWaitingResponse) {
+        sendMessage();
+      }
+    }
 
     function sendMessage() {
+      if (isWaitingResponse) return;
+      
       const input = document.getElementById("userInput");
       const text = input.value.trim();
       if (!text) return;
 
       appendMessage("user", text);
       input.value = "";
+      isWaitingResponse = true;
+      toggleLoading(true);
 
-      fetch(scriptURL, {
+      makeRequest(scriptURL, {
         method: "POST",
-        body: JSON.stringify({ message: text }),
-        headers: {
-          "Content-Type": "application/json"
-        }
+        body: JSON.stringify({
+          message: text,
+          action: "chat"
+        })
       })
-      .then(res => res.json())
       .then(data => {
-        appendMessage("bot", data.response);
-
-        if (data.qrCodeUrl) {
-          appendQRCode(data.qrCodeUrl);
+        if (data.error) {
+          appendMessage("bot", "❌ Ocorreu um erro: " + data.error);
+        } else if (data.response) {
+          appendMessage("bot", data.response);
+          
+          // Se a resposta contém opções de produtos
+          if (data.products) {
+            showProductOptions(data.products);
+          }
+          
+          // Se a resposta contém QR Code
+          if (data.qrCode) {
+            appendQRCode(data.qrCode);
+          }
         }
       })
-      .catch(() => {
+      .catch(error => {
+        console.error("Error:", error);
         appendMessage("bot", "❌ Erro ao conectar. Tente novamente.");
+      })
+      .finally(() => {
+        isWaitingResponse = false;
+        toggleLoading(false);
+      });
+    }
+
+    function showProductOptions(products) {
+      const chatBody = document.getElementById("chatBody");
+      const optionsDiv = document.createElement("div");
+      optionsDiv.className = "message bot";
+      
+      let optionsHTML = '<p>Por favor, escolha uma opção:</p>';
+      products.forEach((product, index) => {
+        optionsHTML += `
+          <div class="product-option" onclick="selectProduct(${index})">
+            <div class="product-title">${product.title}</div>
+            <div class="product-price">Valor: ${product.price}</div>
+          </div>
+        `;
+      });
+      
+      optionsDiv.innerHTML = optionsHTML;
+      chatBody.appendChild(optionsDiv);
+      scrollToBottom();
+    }
+
+    function selectProduct(index) {
+      isWaitingResponse = true;
+      toggleLoading(true);
+      
+      makeRequest(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "selectProduct",
+          productIndex: index
+        })
+      })
+      .then(data => {
+        if (data.error) {
+          appendMessage("bot", "❌ Erro: " + data.error);
+        } else {
+          const paymentInfo = `
+            <div class="payment-info">
+              <p><strong>Chave Pix:</strong> ${data.pixKey}</p>
+              <p><strong>Nome do recebedor:</strong> ${data.recipientName}</p>
+              <p><strong>Cidade:</strong> ${data.city}</p>
+              <p><strong>Valor:</strong> ${data.amount}</p>
+              <p><strong>Descrição:</strong> ${data.description}</p>
+            </div>
+            <button class="payment-confirm" onclick="confirmPayment('${data.transactionId}')">Confirmar Pagamento</button>
+          `;
+          
+          appendMessage("bot", `
+            <p>Ótima escolha! Aqui estão os dados para pagamento via PIX:</p>
+            ${paymentInfo}
+          `);
+          
+          if (data.qrCode) {
+            appendQRCode(data.qrCode);
+          }
+        }
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        appendMessage("bot", "❌ Erro ao processar seleção.");
+      })
+      .finally(() => {
+        isWaitingResponse = false;
+        toggleLoading(false);
+      });
+    }
+
+    function confirmPayment(transactionId) {
+      isWaitingResponse = true;
+      toggleLoading(true);
+      
+      makeRequest(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "confirmPayment",
+          transactionId: transactionId
+        })
+      })
+      .then(data => {
+        if (data.success) {
+          appendMessage("bot", "✅ Pagamento confirmado! Preparando seu material...");
+          
+          // Busca o conteúdo do produto
+          fetchProductContent(transactionId);
+        } else {
+          appendMessage("bot", "❌ Pagamento não confirmado. Por favor, tente novamente.");
+        }
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        appendMessage("bot", "❌ Erro ao confirmar pagamento.");
+      })
+      .finally(() => {
+        isWaitingResponse = false;
+        toggleLoading(false);
+      });
+    }
+
+    function fetchProductContent(transactionId) {
+      isWaitingResponse = true;
+      toggleLoading(true);
+      
+      makeRequest(scriptURL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "getProductContent",
+          transactionId: transactionId
+        })
+      })
+      .then(data => {
+        if (data.content) {
+          appendMessage("bot", data.content);
+          if (data.audioUrl) {
+            appendAudio(data.audioUrl);
+          }
+        } else {
+          appendMessage("bot", "✅ Seu material está pronto! Enviaremos para seu email em breve.");
+        }
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        appendMessage("bot", "✅ Seu material está sendo preparado. Enviaremos para seu email em breve.");
+      })
+      .finally(() => {
+        isWaitingResponse = false;
+        toggleLoading(false);
       });
     }
 
@@ -173,7 +408,13 @@
       const chatBody = document.getElementById("chatBody");
       const msg = document.createElement("div");
       msg.className = "message " + sender;
-      msg.textContent = text;
+      
+      if (typeof text === 'string') {
+        msg.textContent = text;
+      } else {
+        msg.innerHTML = text;
+      }
+      
       chatBody.appendChild(msg);
       scrollToBottom();
     }
@@ -187,9 +428,29 @@
       scrollToBottom();
     }
 
+    function appendAudio(url) {
+      const chatBody = document.getElementById("chatBody");
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.src = url;
+      chatBody.appendChild(audio);
+      scrollToBottom();
+    }
+
     function scrollToBottom() {
       const chatBody = document.getElementById("chatBody");
       chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function toggleLoading(show) {
+      const button = document.getElementById("sendButton");
+      if (show) {
+        button.innerHTML = '<div class="loading"></div>';
+        button.disabled = true;
+      } else {
+        button.textContent = 'Enviar';
+        button.disabled = false;
+      }
     }
   </script>
 </body>
