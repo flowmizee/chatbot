@@ -202,26 +202,44 @@
   </div>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbygutONDOiJxSowKXyPXuOaxGm6qkunpBRvy7MGnOAV6SSBwaT1hnSPGrP3u-LYGCna/exec"; // Substitua pela sua URL
+    const scriptURL = "https://script.google.com/macros/s/AKfycbzAC-tS4aO_bLmY1HnhvcIaWVFLuHcc7uRWLVhlkkhrW7aL6wgLIkfmDv_QwuuSFPUAVw/exec";
     let selectedProduct = null;
     let isWaitingResponse = false;
 
-    // Adiciona tratamento CORS
-    function makeRequest(url, options) {
-      return fetch(url, {
-        ...options,
-        mode: 'cors',
-        headers: {
-          ...options.headers,
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+    // Função para fazer requisições CORS
+    async function makeRequest(url, options) {
+      try {
+        // Primeiro verifica CORS com OPTIONS
+        const corsCheck = await fetch(url, {
+          method: 'OPTIONS',
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Request-Method': 'POST'
+          }
+        });
+        
+        if (!corsCheck.ok) {
+          throw new Error('CORS check failed');
         }
-      }).then(response => {
+
+        // Se OPTIONS passou, faz a requisição principal
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            'Content-Type': 'application/json'
+          }
+        });
+
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-        return response.json();
-      });
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Request failed:', error);
+        throw error;
+      }
     }
 
     function handleKeyPress(event) {
@@ -230,7 +248,7 @@
       }
     }
 
-    function sendMessage() {
+    async function sendMessage() {
       if (isWaitingResponse) return;
       
       const input = document.getElementById("userInput");
@@ -242,38 +260,35 @@
       isWaitingResponse = true;
       toggleLoading(true);
 
-      makeRequest(scriptURL, {
-        method: "POST",
-        body: JSON.stringify({
-          message: text,
-          action: "chat"
-        })
-      })
-      .then(data => {
+      try {
+        const data = await makeRequest(scriptURL, {
+          method: "POST",
+          body: JSON.stringify({
+            message: text,
+            action: "chat"
+          })
+        });
+
         if (data.error) {
           appendMessage("bot", "❌ Ocorreu um erro: " + data.error);
         } else if (data.response) {
           appendMessage("bot", data.response);
           
-          // Se a resposta contém opções de produtos
           if (data.products) {
             showProductOptions(data.products);
           }
           
-          // Se a resposta contém QR Code
           if (data.qrCode) {
             appendQRCode(data.qrCode);
           }
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error("Error:", error);
         appendMessage("bot", "❌ Erro ao conectar. Tente novamente.");
-      })
-      .finally(() => {
+      } finally {
         isWaitingResponse = false;
         toggleLoading(false);
-      });
+      }
     }
 
     function showProductOptions(products) {
@@ -296,18 +311,19 @@
       scrollToBottom();
     }
 
-    function selectProduct(index) {
+    async function selectProduct(index) {
       isWaitingResponse = true;
       toggleLoading(true);
       
-      makeRequest(scriptURL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "selectProduct",
-          productIndex: index
-        })
-      })
-      .then(data => {
+      try {
+        const data = await makeRequest(scriptURL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "selectProduct",
+            productIndex: index
+          })
+        });
+
         if (data.error) {
           appendMessage("bot", "❌ Erro: " + data.error);
         } else {
@@ -331,60 +347,56 @@
             appendQRCode(data.qrCode);
           }
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error("Error:", error);
         appendMessage("bot", "❌ Erro ao processar seleção.");
-      })
-      .finally(() => {
+      } finally {
         isWaitingResponse = false;
         toggleLoading(false);
-      });
+      }
     }
 
-    function confirmPayment(transactionId) {
+    async function confirmPayment(transactionId) {
       isWaitingResponse = true;
       toggleLoading(true);
       
-      makeRequest(scriptURL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "confirmPayment",
-          transactionId: transactionId
-        })
-      })
-      .then(data => {
+      try {
+        const data = await makeRequest(scriptURL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "confirmPayment",
+            transactionId: transactionId
+          })
+        });
+
         if (data.success) {
           appendMessage("bot", "✅ Pagamento confirmado! Preparando seu material...");
-          
-          // Busca o conteúdo do produto
-          fetchProductContent(transactionId);
+          await fetchProductContent(transactionId);
         } else {
           appendMessage("bot", "❌ Pagamento não confirmado. Por favor, tente novamente.");
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error("Error:", error);
         appendMessage("bot", "❌ Erro ao confirmar pagamento.");
-      })
-      .finally(() => {
+      } finally {
         isWaitingResponse = false;
         toggleLoading(false);
-      });
+      }
     }
 
-    function fetchProductContent(transactionId) {
+    async function fetchProductContent(transactionId) {
       isWaitingResponse = true;
       toggleLoading(true);
       
-      makeRequest(scriptURL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "getProductContent",
-          transactionId: transactionId
-        })
-      })
-      .then(data => {
+      try {
+        const data = await makeRequest(scriptURL, {
+          method: "POST",
+          body: JSON.stringify({
+            action: "getProductContent",
+            transactionId: transactionId
+          })
+        });
+
         if (data.content) {
           appendMessage("bot", data.content);
           if (data.audioUrl) {
@@ -393,15 +405,13 @@
         } else {
           appendMessage("bot", "✅ Seu material está pronto! Enviaremos para seu email em breve.");
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error("Error:", error);
         appendMessage("bot", "✅ Seu material está sendo preparado. Enviaremos para seu email em breve.");
-      })
-      .finally(() => {
+      } finally {
         isWaitingResponse = false;
         toggleLoading(false);
-      });
+      }
     }
 
     function appendMessage(sender, text) {
