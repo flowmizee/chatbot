@@ -1,110 +1,137 @@
-const API_KEY = 'AIzaSyBZWq79odwHX5NnccXU_1Y9_SSYAAuPg3Q';
-const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Web Estilo WhatsApp</title>
+  <style>
+    /* Cole aqui todo o seu CSS conforme estava */
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <img src="perfil.webp" alt="Perfil">
+      <div class="name">Chef Larissa Campos</div>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-footer">
+      <input type="text" id="userInput" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter') sendMessage()">
+      <button onclick="sendMessage()" id="sendBtn">Enviar</button>
+    </div>
+  </div>
 
-/**
- * Responde a requisições HTTP GET e serve o HTML do cliente.
- */
-function doGet() {
-  return HtmlService
-    .createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('Chat Web Estilo WhatsApp')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
+  <script>
+    let busy = false;
 
-/**
- * Inclui arquivos separados (ex.: CSS/JS) no HTML.
- */
-function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
+    function sendMessage() {
+      if (busy) return;
+      const inp = document.getElementById('userInput');
+      const txt = inp.value.trim();
+      if (!txt) return;
+      appendMsg('user', txt);
+      inp.value = '';
+      busy = true;
+      toggleLoading(true);
 
-/**
- * Handler principal do chat.
- */
-function handleChat(message) {
-  // lógica de produtos
-  if (/receita|comprar|produto/i.test(message)) {
-    return {
-      response: 'Temos estas opções disponíveis:',
-      products: [
-        { title: '✅ 50 Receitas de Pães Sem Glúten', price: 'R$ 9,99', description: '50 receitas exclusivas sem glúten' },
-        { title: '✅ Pacote Completo Guia Receitas Saudáveis', price: 'R$ 19,99', description: 'Mais de 100 receitas saudáveis' }
-      ]
-    };
-  }
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res.error) appendMsg('bot', '❌ ' + res.error);
+          else {
+            if (res.response) appendMsg('bot', res.response);
+            if (res.products) showProducts(res.products);
+            if (res.qrCode) appendQRCode(res.qrCode);
+          }
+        })
+        .withFailureHandler(() => appendMsg('bot','❌ Erro de comunicação.'))
+        .handleChat(txt);
 
-  // chamada à API Gemini
-  const prompt = `Você é a Chef Larissa Campos, especialista em culinária saudável. ` +
-                 `Responda de forma simpática e profissional a: "${message}" ` +
-                 `(Máximo 2 parágrafos). Se for sobre compras, ofereça nossas opções.`;
-  const text = callGeminiAPI(prompt);
-  return { response: text || 'Desculpe, não entendi. Poderia reformular?' };
-}
+      toggleLoading(false);
+      busy = false;
+    }
 
-/**
- * Seleção de produto.
- */
-function handleSelectProduct(index) {
-  const products = [
-    { title: '50 Receitas de Pães Sem Glúten', price: 'R$ 9,99', pixKey: 'renimarfilho000@gmail.com', recipientName: 'Antonio Renimar Pinheiro Almeida', city: 'São Luís, MA', amount: 'R$ 9,99', description: '50 Receitas de Pães Sem Glúten' },
-    { title: 'Pacote Completo Guia Receitas Saudáveis', price: 'R$ 19,99', pixKey: 'renimarfilho000@gmail.com', recipientName: 'Antonio Renimar Pinheiro Almeida', city: 'São Luís, MA', amount: 'R$ 19,99', description: 'Pacote Completo Guia Receitas Saudáveis' }
-  ];
-  const sel = products[index];
-  if (!sel) return { error: 'Produto não encontrado' };
+    function showProducts(list) {
+      const b = document.getElementById('chatBody');
+      const div = document.createElement('div');
+      div.className = 'message bot';
+      div.innerHTML = '<p>Escolha uma opção:</p>' +
+        list.map((p,i) =>
+          `<div class="product-option" onclick="selectProduct(${i})">
+             <div class="product-title">${p.title}</div>
+             <div class="product-price">Valor: ${p.price}</div>
+           </div>`
+        ).join('');
+      b.appendChild(div);
+      b.scrollTop = b.scrollHeight;
+    }
 
-  const qrData = {
-    pixKey: sel.pixKey,
-    merchantName: sel.recipientName,
-    merchantCity: sel.city.split(',')[0].trim(),
-    amount: parseFloat(sel.amount.replace('R$ ', '').replace(',', '.')),
-    description: sel.description,
-    txid: Utilities.getUuid().slice(0,25)
-  };
-  const qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(JSON.stringify(qrData))}`;
+    function selectProduct(idx) {
+      busy = true; toggleLoading(true);
+      google.script.run
+        .withSuccessHandler(data => {
+          if (data.error) appendMsg('bot', '❌ ' + data.error);
+          else {
+            appendMsg('bot', `<p>Dados PIX:</p><div><strong>Chave:</strong> ${data.pixKey}</div>
+               <button class="payment-confirm" onclick="confirmPayment('${data.transactionId}')">Confirmar Pagamento</button>`);
+            if (data.qrCode) appendQRCode(data.qrCode);
+          }
+        })
+        .handleSelectProduct(idx);
+      busy = false; toggleLoading(false);
+    }
 
-  return { ...sel, qrCode: qrCode, transactionId: qrData.txid };
-}
+    function confirmPayment(txid) {
+      busy = true; toggleLoading(true);
+      google.script.run
+        .withSuccessHandler(() => {
+          appendMsg('bot','✅ Pagamento confirmado!');
+          fetchContent(txid);
+        })
+        .handleConfirmPayment(txid);
+    }
 
-/**
- * Confirmação de pagamento.
- */
-function handleConfirmPayment(txid) {
-  Utilities.sleep(2000);
-  return { success: true, transactionId: txid, confirmationCode: 'PAY-' + Math.floor(Math.random()*1e6) };
-}
+    function fetchContent(txid) {
+      google.script.run
+        .withSuccessHandler(r => {
+          appendMsg('bot', r.content);
+          if (r.audioUrl) {
+            const a = document.createElement('audio');
+            a.controls = true;
+            a.src = r.audioUrl;
+            document.getElementById('chatBody').appendChild(a);
+          }
+        })
+        .handleGetProductContent(txid);
+      busy = false; toggleLoading(false);
+    }
 
-/**
- * Gera conteúdo do produto.
- */
-function handleGetProductContent(txid) {
-  const type = txid.includes('gluten') ? '50 receitas de pães sem glúten' : 'pacote completo de guia de receitas saudáveis';
-  const prompt = `Gere 3 exemplos de receitas (dentre as ${type} compradas). Cada receita deve incluir título, ingredientes e modo de preparo em HTML.`;
-  try {
-    const html = callGeminiAPI(prompt);
-    return { content: html, audioUrl: `https://example.com/audio/${txid}.mp3` };
-  } catch (e) {
-    return { content: 'Seu material está pronto! Em breve envio por email.' };
-  }
-}
+    function appendMsg(cls, txt) {
+      const b = document.getElementById('chatBody');
+      const m = document.createElement('div');
+      m.className = 'message ' + cls;
+      m.innerHTML = txt;
+      b.appendChild(m);
+      b.scrollTop = b.scrollHeight;
+    }
 
-/**
- * Chama a API Gemini.
- */
-function callGeminiAPI(prompt) {
-  const payload = {
-    contents: [{ parts: [{ text: prompt }] }],
-    safetySettings: [{ category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' }],
-    generationConfig: { maxOutputTokens: 2000 }
-  };
-  const opts = {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-  const res = UrlFetchApp.fetch(`${BASE_URL}?key=${API_KEY}`, opts);
-  const j = JSON.parse(res.getContentText());
-  if (j.candidates?.[0]?.content?.parts?.[0]?.text) return j.candidates[0].content.parts[0].text;
-  throw new Error('Resposta inesperada da API');
-}
+    function appendQRCode(url) {
+      const img = new Image();
+      img.src = url;
+      img.className = 'qr';
+      document.getElementById('chatBody').appendChild(img);
+      img.scrollIntoView();
+    }
+
+    function toggleLoading(show) {
+      const btn = document.getElementById('sendBtn');
+      if (show) {
+        btn.innerHTML = '<div class="loading"></div>';
+        btn.disabled = true;
+      } else {
+        btn.textContent = 'Enviar';
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
