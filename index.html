@@ -179,7 +179,8 @@
   </div>
 
   <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw639xCI7R3w6m_P246BVYFzjqMPdlGy-E5pAlYNnXaD4qRok7u6s2AIaJdaju8pW6sKw/exec";
+    const GEMINI_API_KEY = 'AIzaSyBZWq79odwHX5NnccXU_1Y9_SSYAAuPg3Q'; // Chave no front-end
+    const SCRIPT_URL = 'https://script.google.com/macros/s/SUA_URL_DO_APPS_SCRIPT/exec';
     let selectedProduct = null;
     let isWaitingResponse = false;
 
@@ -202,18 +203,13 @@
       toggleLoading(true);
 
       try {
-        const url = `${SCRIPT_URL}?action=chat&message=${encodeURIComponent(text)}`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.error) {
-          appendMessage("bot", "❌ Erro: " + data.error);
-        } else if (data.response) {
-          appendMessage("bot", data.response);
-          
-          if (data.products) {
-            showProductOptions(data.products);
-          }
+        // Verifica se é sobre produtos
+        if (/receit(a|as)|compr(a|ar)|produt(o|os)/i.test(text)) {
+          showProductOptions();
+        } else {
+          // Chama diretamente a API Gemini do front-end
+          const geminiResponse = await callGeminiAPI(text);
+          appendMessage("bot", geminiResponse);
         }
       } catch (error) {
         console.error("Error:", error);
@@ -224,15 +220,28 @@
       }
     }
 
-    function showProductOptions(products) {
+    function showProductOptions() {
       const chatBody = document.getElementById("chatBody");
       const optionsDiv = document.createElement("div");
       optionsDiv.className = "message bot";
       
+      const products = [
+        {
+          title: "✅ 50 Receitas de Pães Sem Glúten",
+          price: "R$ 9,99",
+          id: "produto1"
+        },
+        {
+          title: "✅ Pacote Completo Guia Receitas Saudáveis",
+          price: "R$ 19,99",
+          id: "produto2"
+        }
+      ];
+      
       let optionsHTML = '<p>Escolha uma opção:</p>';
       products.forEach((product, index) => {
         optionsHTML += `
-          <div class="product-option" onclick="selectProduct(${index})">
+          <div class="product-option" onclick="selectProduct('${product.id}')">
             <div class="product-title">${product.title}</div>
             <div class="product-price">${product.price}</div>
           </div>
@@ -244,12 +253,12 @@
       scrollToBottom();
     }
 
-    async function selectProduct(index) {
+    async function selectProduct(productId) {
       isWaitingResponse = true;
       toggleLoading(true);
       
       try {
-        const url = `${SCRIPT_URL}?action=selectProduct&index=${index}`;
+        const url = `${SCRIPT_URL}?action=selectProduct&id=${productId}`;
         const response = await fetch(url);
         const data = await response.json();
 
@@ -312,21 +321,47 @@
       toggleLoading(true);
       
       try {
-        const url = `${SCRIPT_URL}?action=getContent&id=${transactionId}`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (data.content) {
-          appendMessage("bot", data.content);
-        } else {
-          appendMessage("bot", "✅ Material enviado para seu email!");
-        }
+        // Determina qual produto foi comprado
+        const productType = transactionId.includes("produto1") ? 
+          "50 receitas de pães sem glúten" : 
+          "pacote completo de guia de receitas saudáveis";
+        
+        const prompt = `Gere 3 exemplos de receitas do produto "${productType}". 
+                      Formate em HTML para web. Inclua título, ingredientes e modo de preparo.`;
+        
+        // Chama a API Gemini diretamente do front-end
+        const content = await callGeminiAPI(prompt);
+        appendMessage("bot", content || "✅ Seu material foi enviado para seu email!");
       } catch (error) {
         console.error("Error:", error);
         appendMessage("bot", "✅ Seu material será enviado em breve!");
       } finally {
         isWaitingResponse = false;
         toggleLoading(false);
+      }
+    }
+
+    async function callGeminiAPI(prompt) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `Você é a Chef Larissa Campos. ${prompt} Responda de forma profissional e detalhada.`
+              }]
+            }]
+          })
+        });
+        
+        const data = await response.json();
+        return data.candidates?.[0]?.content?.parts?.[0]?.text || "Não foi possível gerar a resposta.";
+      } catch (error) {
+        console.error("Erro na API Gemini:", error);
+        return "Desculpe, estou com dificuldades técnicas no momento.";
       }
     }
 
