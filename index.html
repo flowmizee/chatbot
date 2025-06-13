@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-    <title>Chef Larissa Campos</title>
+    <title>Chat Web Estilo WhatsApp</title>
     <style>
       html, body {
         margin: 0;
@@ -121,7 +121,7 @@
         margin-right: 8px;
         background-color: #f0f0f0;
         outline: none;
-        padding-left: 50px;
+        padding-left: 40px;
       }
       .chat-footer button#actionButton {
         width: 40px;
@@ -276,7 +276,7 @@
       /* Indicador de gravação do usuário */
       .user-recording-indicator {
         position: absolute;
-        right: 80px;
+        left: 25px;
         display: flex;
         align-items: center;
       }
@@ -287,12 +287,6 @@
         animation: pulse 1.5s infinite ease-in-out;
       }
       .user-recording-time {
-        font-size: 14px;
-        color: #555;
-      }
-      .user-recording-cancel {
-        position: absolute;
-        right: 20px;
         font-size: 14px;
         color: #555;
       }
@@ -308,7 +302,7 @@
       }
       .mic-icon {
         position: absolute;
-        right: 80px;
+        left: 15px;
         width: 24px;
         height: 24px;
         cursor: pointer;
@@ -325,12 +319,9 @@
       </div>
       <div class="chat-body" id="chatBody"></div>
       <div class="chat-footer">
+        <img src="gravaperson.webp" alt="Gravar" class="mic-icon" id="micIcon">
+        <span class="user-recording-time" id="recordingTime" style="display: none;">0:00</span>
         <input type="text" id="userInput" placeholder="Digite sua mensagem..." oninput="updateActionIcon()" onkeypress="handleKeyPress(event)">
-        <div class="user-recording-indicator">
-          <img src="gravaperson.webp" alt="Gravar" class="mic-icon" id="micIcon">
-          <span class="user-recording-time" id="recordingTime" style="display: none;">0:00</span>
-        </div>
-        <span class="user-recording-cancel" id="recordingCancel" style="display: none;">&lt; Deslize para cancelar</span>
         <button id="actionButton" title="Gravar ou enviar">
           <img id="actionIcon" src="gravacao.webp" alt="Ícone">
         </button>
@@ -382,7 +373,6 @@
       const userInput = document.getElementById('userInput');
       const micIcon = document.getElementById('micIcon');
       const recordingTime = document.getElementById('recordingTime');
-      const recordingCancel = document.getElementById('recordingCancel');
 
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -413,16 +403,12 @@
       function startRecordingUI() {
         micIcon.style.display = 'block';
         recordingTime.style.display = 'block';
-        recordingCancel.style.display = 'block';
-        userInput.style.paddingRight = '150px';
         userInput.placeholder = '';
       }
 
       function stopRecordingUI() {
         micIcon.style.display = 'none';
         recordingTime.style.display = 'none';
-        recordingCancel.style.display = 'none';
-        userInput.style.paddingRight = '0';
         userInput.placeholder = 'Digite sua mensagem...';
       }
 
@@ -505,7 +491,7 @@ Larissa:`;
 
       window.onload = async () => {
         // Fluxo inicial com as mensagens pré-definidas intactas
-        await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Olá tudo bem? Eu me chamo Larissa Campos, fico feliz que esteja interessada nas minhas Receitinhas saudáveis.");
+        await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Olá tudo bem? Eu me chomo Larissa Campos, fico feliz que esteja interessada nas minhas Receitinhas saudáveis.");
         await simulateTyping("🍞Você está diante da oportunidade de aprender a fazer receitas sem glúten incríveis, fofinhos e deliciosos, que vão surpreender todo mundo!<br><br>- 50 receitas exclusivas<br>- Sem Glúten e Sem Lactose<br>- Ingredientes de fácil acesso<br>- ⁠Suporte no Whatsapp<br>- Acesso Vitalício<br><br>🔴Tudo isso por apenas <strong>R$ 9,90</strong>!");
         // Mostrar indicador de gravação do bot como mensagem
         const recordingEl = document.createElement("div");
