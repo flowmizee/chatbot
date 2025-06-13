@@ -276,7 +276,7 @@
       /* Indicador de gravação do usuário */
       .user-recording-indicator {
         position: absolute;
-        left: 50px;
+        left: 60px;
         display: flex;
         align-items: center;
       }
@@ -302,7 +302,7 @@
       }
       .mic-icon {
         position: absolute;
-        left: 25px;
+        left: 35px;
         width: 24px;
         height: 24px;
         cursor: pointer;
@@ -503,7 +503,6 @@ Larissa:`;
         recordingEl.remove();
         await showAudioMessage(audioVoice1, false);
         await waitForAudioToFinish(audioVoice1);
-        await simulateTyping("✨ Posso te mostrar uma prévia? Você vai se surpreender 😍");
         appendMessage("bot", `
           <p>Qual você quer? 👇🏻☺️</p>
           <div class="option-buttons">
