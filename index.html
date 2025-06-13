@@ -289,7 +289,11 @@
       .user-recording-time {
         font-size: 14px;
         color: #555;
-        margin-left: 32px; /* Adicionei esta linha para posicionar ao lado direito do ícone */
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
       }
       @keyframes pulse {
         0%, 100% { opacity: 1; }
@@ -309,6 +313,9 @@
         cursor: pointer;
         animation: pulse 1.5s infinite ease-in-out;
         display: none;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
       }
     </style>
   </head>
