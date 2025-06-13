@@ -120,27 +120,20 @@
         background-color: #f0f0f0;
         outline: none;
       }
-      .chat-footer button {
-        background-color: #075E54;
-        color: white;
+      .chat-footer button#actionButton {
+        width: 40px;
+        height: 40px;
+        background-color: #000;
         border: none;
-        padding: 10px 16px;
-        font-size: 16px;
-        border-radius: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
-        margin-left: 4px;
       }
-      .chat-footer button:hover {
-        background-color: #0b7a67;
-      }
-      .chat-footer #micButton {
-        background-color: transparent;
-        color: #075E54;
-        font-size: 20px;
-        padding: 0 8px;
-      }
-      .chat-footer #micButton.recording {
-        color: red;
+      .chat-footer button#actionButton img {
+        width: 20px;
+        height: 20px;
       }
       .option-buttons {
         display: flex;
@@ -286,9 +279,10 @@
       </div>
       <div class="chat-body" id="chatBody"></div>
       <div class="chat-footer">
-        <button id="micButton" title="Gravar mensagem de voz">🎤</button>
-        <input type="text" id="userInput" placeholder="Digite sua mensagem..." onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()" id="sendButton">Enviar</button>
+        <input type="text" id="userInput" placeholder="Digite sua mensagem..." oninput="updateActionIcon()" onkeypress="handleKeyPress(event)">
+        <button id="actionButton" title="Gravar ou enviar">
+          <img id="actionIcon" src="gravacao.webp" alt="Ícone">
+        </button>
       </div>
     </div>
     <script>
@@ -298,7 +292,7 @@
       const CHECKOUT_COMPLETO = 'https://pay.kiwify.com.br/6LNnHnj';
       let isWaitingResponse = false;
       let typingEl = null;
-      let conversationStage = 0; // 0 = início, 1 = já viu detalhes via botão, 2 = estágio final compra
+      let conversationStage = 0;
       let currentPackage = 'basico';
       let activeAudio = null;
       let audioEndListener = null;
@@ -330,7 +324,10 @@
 
       // Web Speech API para gravação de voz e transcrição
       let recognition;
-      const micButton = document.getElementById('micButton');
+      const actionButton = document.getElementById('actionButton');
+      const actionIcon = document.getElementById('actionIcon');
+      const userInput = document.getElementById('userInput');
+
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         recognition = new SpeechRecognition();
@@ -338,38 +335,44 @@
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.onstart = () => {
-          micButton.classList.add('recording');
-          // mostrar indicativo de gravação
+          actionButton.classList.add('recording');
+          // mostrar indicativo de gravação alinhado à direita
           const recEl = document.createElement("div");
-          recEl.className = "recording-indicator";
+          recEl.className = "recording-indicator user";
           recEl.id = "recordingIndicator";
           recEl.innerHTML = `<div class="recording-dot"></div>`;
           document.getElementById("chatBody").appendChild(recEl);
           document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
         };
         recognition.onend = () => {
-          micButton.classList.remove('recording');
+          actionButton.classList.remove('recording');
           const recEl = document.getElementById("recordingIndicator");
           if (recEl) recEl.remove();
         };
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
-          const inputEl = document.getElementById("userInput");
-          inputEl.value = transcript;
-          // opcional: enviar automaticamente após transcrição
+          userInput.value = transcript;
+          updateActionIcon();
           sendMessage();
         };
-        micButton.addEventListener('click', () => {
-          if (recognition) {
-            try {
-              recognition.start();
-            } catch (e) {
-              // ignore start errors
-            }
-          }
-        });
-      } else {
-        micButton.style.display = 'none';
+      }
+
+      actionButton.addEventListener('click', () => {
+        if (userInput.value.trim()) {
+          sendMessage();
+        } else if (recognition) {
+          try {
+            recognition.start();
+          } catch (e) {}
+        }
+      });
+
+      function updateActionIcon() {
+        if (userInput.value.trim()) {
+          actionIcon.src = 'mensagem.webp';
+        } else {
+          actionIcon.src = 'gravacao.webp';
+        }
       }
 
       function buildSystemPrompt(userMessage) {
@@ -420,13 +423,13 @@ Larissa:`;
       window.onload = async () => {
         await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Eu sou a Larissa Campos. Fico feliz que você esteja aqui.");
         await simulateTyping("🍞 Receitas sem glúten incríveis, fofinhas e deliciosas!<br><br>- 50 receitas exclusivas<br>- Sem glúten e sem lactose<br>- Ingredientes fáceis<br>- Suporte via WhatsApp<br>- Acesso vitalício<br><br>🔴 Apenas R$ 9,90!");
-        const recordingEl = document.createElement("div");
-        recordingEl.className = "recording-indicator";
-        recordingEl.innerHTML = `<div class="recording-dot"></div>`;
-        document.getElementById("chatBody").appendChild(recordingEl);
+        const recWait = document.createElement("div");
+        recWait.className = "recording-indicator";
+        recWait.innerHTML = `<div class="recording-dot"></div>`;
+        document.getElementById("chatBody").appendChild(recWait);
         document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
         await new Promise(r => setTimeout(r, 3000));
-        recordingEl.remove();
+        recWait.remove();
         await showAudioMessage(audioVoice1, false);
         await waitForAudioToFinish(audioVoice1);
         await simulateTyping("✨ Posso te mostrar uma prévia? Você vai se surpreender 😍");
@@ -451,13 +454,13 @@ Larissa:`;
         appendMessage("user", option);
         lastOptionSelected = option;
         currentPackage = option.toLowerCase().includes('completo') ? 'completo' : 'basico';
-        const recordingEl = document.createElement("div");
-        recordingEl.className = "recording-indicator";
-        recordingEl.innerHTML = `<div class="recording-dot"></div>`;
-        document.getElementById("chatBody").appendChild(recordingEl);
+        const recEl = document.createElement("div");
+        recEl.className = "recording-indicator";
+        recEl.innerHTML = `<div class="recording-dot"></div>`;
+        document.getElementById("chatBody").appendChild(recEl);
         document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
         await new Promise(r => setTimeout(r, Math.random() * 2000 + 2000));
-        recordingEl.remove();
+        recEl.remove();
         if (currentPackage === 'completo') {
           shownCompletoDetails = true;
           await showAudioMessage(audioGuia, false);
@@ -657,11 +660,11 @@ Larissa:`;
 
       async function sendMessage() {
         if (isWaitingResponse) return;
-        const inputEl = document.getElementById("userInput");
-        const text = inputEl.value.trim();
+        const text = userInput.value.trim();
         if (!text) return;
         appendMessage("user", text);
-        inputEl.value = "";
+        userInput.value = "";
+        updateActionIcon();
         isWaitingResponse = true;
         showTypingIndicator();
 
