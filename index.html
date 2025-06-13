@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-    <title>Chat Web Estilo WhatsApp</title>
+    <title>Chef Larissa Campos</title>
     <style>
       html, body {
         margin: 0;
@@ -253,7 +253,7 @@
         border-radius: 8px;
         margin-bottom: 8px;
         align-self: flex-start;
-        max-width: 60px;
+        max-width: 40px;
         position: relative;
         box-shadow: 0 1px 1px rgba(0,0,0,0.1);
       }
@@ -269,14 +269,14 @@
         border-bottom: 8px solid transparent;
       }
       .bot-recording-img {
-        width: 28px;
-        height: 28px;
+        width: 32px;
+        height: 32px;
         animation: pulse 1.5s infinite ease-in-out;
       }
       /* Indicador de gravação do usuário */
       .user-recording-indicator {
         position: absolute;
-        left: 20px;
+        right: 80px;
         display: flex;
         align-items: center;
       }
@@ -308,7 +308,7 @@
       }
       .mic-icon {
         position: absolute;
-        left: 25px;
+        right: 80px;
         width: 24px;
         height: 24px;
         cursor: pointer;
@@ -325,10 +325,12 @@
       </div>
       <div class="chat-body" id="chatBody"></div>
       <div class="chat-footer">
-        <img src="gravaperson.webp" alt="Gravar" class="mic-icon" id="micIcon">
-        <span class="user-recording-time" id="recordingTime" style="display: none;">0:00</span>
-        <span class="user-recording-cancel" id="recordingCancel" style="display: none;">&lt; Deslize para cancelar</span>
         <input type="text" id="userInput" placeholder="Digite sua mensagem..." oninput="updateActionIcon()" onkeypress="handleKeyPress(event)">
+        <div class="user-recording-indicator">
+          <img src="gravaperson.webp" alt="Gravar" class="mic-icon" id="micIcon">
+          <span class="user-recording-time" id="recordingTime" style="display: none;">0:00</span>
+        </div>
+        <span class="user-recording-cancel" id="recordingCancel" style="display: none;">&lt; Deslize para cancelar</span>
         <button id="actionButton" title="Gravar ou enviar">
           <img id="actionIcon" src="gravacao.webp" alt="Ícone">
         </button>
@@ -412,7 +414,7 @@
         micIcon.style.display = 'block';
         recordingTime.style.display = 'block';
         recordingCancel.style.display = 'block';
-        userInput.style.paddingLeft = '70px';
+        userInput.style.paddingRight = '150px';
         userInput.placeholder = '';
       }
 
@@ -420,7 +422,7 @@
         micIcon.style.display = 'none';
         recordingTime.style.display = 'none';
         recordingCancel.style.display = 'none';
-        userInput.style.paddingLeft = '50px';
+        userInput.style.paddingRight = '0';
         userInput.placeholder = 'Digite sua mensagem...';
       }
 
@@ -503,7 +505,7 @@ Larissa:`;
 
       window.onload = async () => {
         // Fluxo inicial com as mensagens pré-definidas intactas
-        await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Olá tudo bem? Eu me chomo Larissa Campos, fico feliz que esteja interessada nas minhas Receitinhas saudáveis.");
+        await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Olá tudo bem? Eu me chamo Larissa Campos, fico feliz que esteja interessada nas minhas Receitinhas saudáveis.");
         await simulateTyping("🍞Você está diante da oportunidade de aprender a fazer receitas sem glúten incríveis, fofinhos e deliciosos, que vão surpreender todo mundo!<br><br>- 50 receitas exclusivas<br>- Sem Glúten e Sem Lactose<br>- Ingredientes de fácil acesso<br>- ⁠Suporte no Whatsapp<br>- Acesso Vitalício<br><br>🔴Tudo isso por apenas <strong>R$ 9,90</strong>!");
         // Mostrar indicador de gravação do bot como mensagem
         const recordingEl = document.createElement("div");
@@ -515,7 +517,7 @@ Larissa:`;
         recordingEl.remove();
         await showAudioMessage(audioVoice1, false);
         await waitForAudioToFinish(audioVoice1);
-        await simulateTyping("✨ Posso te mostrar uma prévia? Você vai se surpreender com o que tem lá 😍");
+        await simulateTyping("✨ Posso te mostrar uma prévia? Você vai se surpreender 😍");
         appendMessage("bot", `
           <div class="option-buttons">
             <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
@@ -605,6 +607,7 @@ Larissa:`;
             <p>✅ Guia Pães Sem Glúten com 125 receitas</p>
             <p>✅ Acesso vitalício e todas as atualizações</p>
             <p>✅ Comunidade exclusiva no WhatsApp</p>
+            <p>✅ Contato direto comigo via WhatsApp</p>
             <p>✅ 6 E-books extras:</p>
             <p>• Doces sem Açúcar</p>
             <p>• Bolos Sem Glúten</p>
@@ -685,7 +688,7 @@ Larissa:`;
           await showBuyOptions();
         } else if (lower.includes("mais informações")) {
           if (currentPackage === 'completo') {
-            await simulateTyping("Claro! O Pacote Completo inclui 125 receitas de pães sem glúten, acesso vitalício a todas as atualizações, comunidade exclusiva no WhatsApp e 6 e-books extras com técnicas avançadas. Por R$ 19,90, clique no botão abaixo para finalizar.");
+            await simulateTyping("Claro! O Pacote Completo inclui 125 receitas de pães sem glúten, acesso vitalício a todas as atualizações, comunidade exclusiva no WhatsApp, contato direto comigo e 6 e-books extras com técnicas avançadas. Por R$ 19,90, clique no botão abaixo para finalizar.");
           } else {
             await simulateTyping("Claro! O Ebook Básico oferece 50 receitas saudáveis, sem glúten e sem lactose, testadas e aprovadas para facilitar seu dia a dia. Por R$ 9,90, clique no botão abaixo para finalizar.");
           }
@@ -693,7 +696,7 @@ Larissa:`;
         } else if (lower.includes("quero o pacote completo") || lower.includes("quero o completo")) {
           currentPackage = 'completo';
           await simulateTyping(getRandomPersonalized());
-          await simulateTyping("O Pacote Completo inclui 125 receitas de pães sem glúten, acesso vitalício, comunidade exclusiva no WhatsApp e 6 e-books extras. Por R$ 19,90, clique no botão abaixo para finalizar.");
+          await simulateTyping("O Pacote Completo inclui 125 receitas de pães sem glúten, acesso vitalício, comunidade exclusiva no WhatsApp, contato direto comigo e 6 e-books extras. Por R$ 19,90, clique no botão abaixo para finalizar.");
           await showBuyOptions();
         } else if (lower.includes("50 receitas") || lower.includes("sim, quero comprar") || lower.includes("quero as 50")) {
           currentPackage = 'basico';
@@ -739,13 +742,6 @@ Larissa:`;
               </button>
             </div>
           `);
-          await simulateTyping("Ou, se preferir, você pode adquirir apenas o Ebook Básico com 50 receitas:");
-          appendMessage("bot", `
-            <div class="buy-options">
-              <button class="buy-button" onclick="handlePurchaseClick('basico')">
-                QUERO AS 50 RECEITAS - R$ 9,90
-              </button>
-            </div>`);
         }
         await simulateTyping("Qualquer dúvida é só me chamar! 😊");
       }
@@ -769,8 +765,10 @@ Larissa:`;
         const lower = text.toLowerCase();
         const normalized = lower.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-        // Perguntas sobre Larissa
+        // Perguntas sobre Larissa ou sobre o bot
         if (normalized.includes('quem e larissa') || normalized.includes('quem é larissa') ||
+            normalized.includes('quem e voce') || normalized.includes('quem é você') ||
+            normalized.includes('quem e vc') || normalized.includes('quem é vc') ||
             (normalized.includes('de onde') && normalized.includes('larissa')) ||
             normalized.includes('onde mora') || normalized.includes('onde vive') ||
             normalized.includes('vc é de onde') || normalized.includes('você é de onde')) {
@@ -810,7 +808,7 @@ Larissa:`;
           return;
         }
         // Como comprar
-        if (normalized.includes('como comprar') || normalized.includes('como faco para comprar') || normalized.includes('como faço para comprar')) {
+        if (normalized.includes('como comprar') || normalized.includes('como faco para comprar') || normalized.includes('como faço para comprar') || normalized.includes('processo de compra') || normalized.includes('como funciona a compra')) {
           hideTypingIndicator();
           await showHowToBuy();
           isWaitingResponse = false;
@@ -871,15 +869,15 @@ Larissa:`;
         // Diferença entre e-books
         if (normalized.includes('diferenca') || normalized.includes('diferença') || normalized.includes('comparar') || normalized.includes('oq muda') || normalized.includes('oque muda') || normalized.includes('o que muda')) {
           hideTypingIndicator();
-          await simulateTyping("Básico: 50 receitas sem glúten e lactose, acesso vitalício, suporte. R$ 9,90. Completo: 125 receitas, comunidade, atualizações e 6 bônus. R$ 19,90.");
+          await simulateTyping("Básico: 50 receitas sem glúten e lactose, acesso vitalício, suporte. R$ 9,90. Completo: 125 receitas, comunidade, contato direto, atualizações e 6 bônus. R$ 19,90.");
           await showBuyOptions();
           isWaitingResponse = false;
           return;
         }
         // Comunidade
-        if (normalized.includes('comunidade') || normalized.includes('whatsapp') || normalized.includes('grupo')) {
+        if (normalized.includes('comunidade') || normalized.includes('whatsapp') || normalized.includes('grupo') || normalized.includes('contato direto')) {
           hideTypingIndicator();
-          await simulateTyping("A comunidade exclusiva está no Pacote Completo. Para participar, clique no botão.");
+          await simulateTyping("No Pacote Completo você tem tanto a comunidade exclusiva quanto contato direto comigo via WhatsApp. Para participar, clique no botão.");
           appendMessage("bot", `
             <div class="buy-options">
               <button class="buy-button" onclick="handlePurchaseClick('completo')">
@@ -973,7 +971,7 @@ Larissa:`;
         // Suporte técnico
         if (normalized.includes('suporte') || normalized.includes('profissional') || normalized.includes('especialista')) {
           hideTypingIndicator();
-          await simulateTyping("Suporte via WhatsApp: no Básico falo diretamente com você e tem acesso a profissional técnico; no Completo, também comunidade exclusiva.");
+          await simulateTyping("Suporte via WhatsApp: no Básico falo diretamente com você; no Completo, além do contato direto, você também tem acesso à comunidade exclusiva.");
           if (currentPackage === 'completo') {
             appendMessage("bot", `
               <div class="buy-options">
@@ -993,9 +991,9 @@ Larissa:`;
           hideTypingIndicator();
           if (!shownCompletoDetails) {
             shownCompletoDetails = true;
-            await simulateTyping("O Pacote Completo inclui Guia Pães Sem Glúten com 125 receitas, acesso vitalício com todas as atualizações, comunidade exclusiva no WhatsApp e 6 e-books extras. Tudo por R$ 19,90.");
+            await simulateTyping("O Pacote Completo inclui Guia Pães Sem Glúten com 125 receitas, acesso vitalício com todas as atualizações, comunidade exclusiva no WhatsApp, contato direto comigo e 6 e-books extras. Tudo por R$ 19,90.");
           } else {
-            await simulateTyping("Pacote Completo: 125 receitas sem glúten + comunidade + 6 bônus + acesso vitalício. R$ 19,90.");
+            await simulateTyping("Pacote Completo: 125 receitas sem glúten + comunidade + contato direto + 6 bônus + acesso vitalício. R$ 19,90.");
           }
           currentPackage = 'completo';
           appendMessage("bot", `
@@ -1029,7 +1027,7 @@ Larissa:`;
             currentPackage = 'completo';
             if (!shownCompletoDetails) {
               shownCompletoDetails = true;
-              await simulateTyping("Pacote Completo: 125 receitas, comunidade e 6 bônus. R$ 19,90.");
+              await simulateTyping("Pacote Completo: 125 receitas, comunidade, contato direto e 6 bônus. R$ 19,90.");
             } else {
               await simulateTyping("Pacote Completo por R$ 19,90.");
             }
@@ -1162,7 +1160,7 @@ Larissa:`;
       }
 
       async function showHowToBuy() {
-        await simulateTyping("<p>A compra é bem simples e segura:</p><p>1. Clique no botão do e-book escolhido.</p><p>2. Será redirecionado para Kiwify.</p><p>3. Preencha dados e pagamento.</p><p>4. Após aprovação, você recebe o e-book por e-mail.</p>");
+        await simulateTyping("<p>A compra é bem simples e segura:</p><p>1. Clique no botão do e-book escolhido.</p><p>2. Será redirecionado para a plataforma Kiwify.</p><p>3. Preencha seus dados e forma de pagamento.</p><p>4. Após confirmação do pagamento, você recebe o e-book por e-mail em minutos.</p><p>5. Se não receber, verifique sua caixa de spam ou me avise.</p>");
         if (currentPackage) {
           await showBuyOptions();
         } else {
