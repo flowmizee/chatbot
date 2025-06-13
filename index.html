@@ -276,7 +276,7 @@
       /* Indicador de gravação do usuário */
       .user-recording-indicator {
         position: absolute;
-        left: 25px;
+        left: 50px;
         display: flex;
         align-items: center;
       }
@@ -302,7 +302,7 @@
       }
       .mic-icon {
         position: absolute;
-        left: 15px;
+        left: 25px;
         width: 24px;
         height: 24px;
         cursor: pointer;
@@ -505,6 +505,7 @@ Larissa:`;
         await waitForAudioToFinish(audioVoice1);
         await simulateTyping("✨ Posso te mostrar uma prévia? Você vai se surpreender 😍");
         appendMessage("bot", `
+          <p>Qual você quer? 👇🏻☺️</p>
           <div class="option-buttons">
             <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
             <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
