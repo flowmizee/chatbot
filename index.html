@@ -25,7 +25,6 @@
         display: flex;
         flex-direction: column;
         box-shadow: 0 0 10px rgba(0,0,0,0.2);
-        position: relative;
       }
       .chat-header {
         background-color: #075E54;
@@ -121,12 +120,11 @@
         margin-right: 8px;
         background-color: #f0f0f0;
         outline: none;
-        padding-left: 50px;
       }
       .chat-footer button#actionButton {
         width: 40px;
         height: 40px;
-        background-color: #1bac5f;
+        background-color: #000;
         border: none;
         border-radius: 50%;
         display: flex;
@@ -135,8 +133,8 @@
         cursor: pointer;
       }
       .chat-footer button#actionButton img {
-        width: 20px;
-        height: 20px;
+        width: 24px;
+        height: 24px;
       }
       .option-buttons {
         display: flex;
@@ -201,8 +199,8 @@
         width: 250px;
       }
       .audio-message .play-button {
-        width: 30px;
-        height: 30px;
+        width: 36px;
+        height: 36px;
         background-color: #25D366;
         border-radius: 50%;
         display: flex;
@@ -218,15 +216,15 @@
         content: '';
         width: 0;
         height: 0;
-        border-top: 7px solid transparent;
-        border-left: 12px solid white;
-        border-bottom: 7px solid transparent;
-        margin-left: 2px;
+        border-top: 8px solid transparent;
+        border-left: 14px solid white;
+        border-bottom: 8px solid transparent;
+        margin-left: 3px;
       }
       .audio-message .play-button.playing::after {
         content: '';
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         background-color: white;
         border: none;
       }
@@ -250,42 +248,45 @@
       .bot-recording-indicator {
         background-color: white;
         padding: 8px 12px;
-        border-radius: 15px;
-        display: flex;
-        align-items: center;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        border-radius: 8px;
         margin-bottom: 8px;
         align-self: flex-start;
-        max-width: 80%;
+        max-width: 50px;
+        position: relative;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
       }
-      .bot-recording-indicator img {
-        width: 20px;
-        height: 20px;
-        margin-right: 8px;
+      .bot-recording-indicator::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: -8px;
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid white;
+        border-bottom: 8px solid white;
+        border-top: 8px solid transparent;
+      }
+      .bot-recording-img {
+        width: 24px;
+        height: 24px;
         animation: pulse 1.5s infinite ease-in-out;
       }
       /* Indicador de gravação do usuário */
       .user-recording-indicator {
         position: absolute;
-        left: 20px;
+        right: 20px;
         display: flex;
         align-items: center;
-      }
-      .user-recording-indicator img {
-        width: 20px;
-        height: 20px;
-        margin-right: 8px;
-        animation: pulse 1.5s infinite ease-in-out;
+        gap: 5px;
       }
       .user-recording-time {
         font-size: 14px;
         color: #555;
       }
-      .user-recording-cancel {
-        position: absolute;
-        right: 20px;
-        font-size: 14px;
-        color: #555;
+      .mic-icon {
+        width: 24px;
+        height: 24px;
       }
       @keyframes pulse {
         0%, 100% { opacity: 1; }
@@ -297,13 +298,6 @@
         gap: 10px;
         margin-top: 15px;
       }
-      .mic-icon {
-        position: absolute;
-        left: 25px;
-        width: 20px;
-        height: 20px;
-        cursor: pointer;
-      }
     </style>
   </head>
   <body>
@@ -314,9 +308,10 @@
       </div>
       <div class="chat-body" id="chatBody"></div>
       <div class="chat-footer">
-        <img src="gravaperson.webp" alt="Gravar" class="mic-icon" id="micIcon" style="display: none;">
-        <span class="user-recording-time" id="recordingTime" style="display: none;">0:00</span>
-        <span class="user-recording-cancel" id="recordingCancel" style="display: none;">&lt; Deslize para cancelar</span>
+        <div class="user-recording-indicator" id="recordingIndicator" style="display: none;">
+          <img src="gravaperson.webp" alt="Gravar" class="mic-icon">
+          <span class="user-recording-time" id="recordingTime">0:00</span>
+        </div>
         <input type="text" id="userInput" placeholder="Digite sua mensagem..." oninput="updateActionIcon()" onkeypress="handleKeyPress(event)">
         <button id="actionButton" title="Gravar ou enviar">
           <img id="actionIcon" src="gravacao.webp" alt="Ícone">
@@ -367,9 +362,8 @@
       const actionButton = document.getElementById('actionButton');
       const actionIcon = document.getElementById('actionIcon');
       const userInput = document.getElementById('userInput');
-      const micIcon = document.getElementById('micIcon');
+      const recordingIndicator = document.getElementById('recordingIndicator');
       const recordingTime = document.getElementById('recordingTime');
-      const recordingCancel = document.getElementById('recordingCancel');
 
       if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -398,18 +392,12 @@
       }
 
       function startRecordingUI() {
-        micIcon.style.display = 'block';
-        recordingTime.style.display = 'block';
-        recordingCancel.style.display = 'block';
-        userInput.style.paddingLeft = '70px';
+        recordingIndicator.style.display = 'flex';
         userInput.placeholder = '';
       }
 
       function stopRecordingUI() {
-        micIcon.style.display = 'none';
-        recordingTime.style.display = 'none';
-        recordingCancel.style.display = 'none';
-        userInput.style.paddingLeft = '50px';
+        recordingIndicator.style.display = 'none';
         userInput.placeholder = 'Digite sua mensagem...';
       }
 
@@ -442,9 +430,9 @@
       }
 
       function buildSystemPrompt(userMessage) {
-        let prompt = `Você é a Chef Larissa Campos, chef e nutricionista especializada em receitas sem glúten e sem lactose. Responda sempre em primeira pessoa do singular (eu), de forma direta, simpática, confiante, acolhedora e com leve carisma. Nunca use cumprimentos como "oi" ou "oi, tudo bem?". Use respostas curtas, claras e completas, sem omitir o essencial. Não inclua chamadas de ação textuais redundantes como "🌟 Quero o Pacote Completo" no texto, pois os botões aparecem abaixo. Incentive a compra de forma natural, ex: “Se quiser, posso te enviar o link agora mesmo 😊”. 
+        let prompt = `Você é a Chef Larissa Campos, chef e nutricionista especializada em receitas sem glúten e sem lactose. Responda sempre em primeira pessoa do singular (eu), de forma direta, simpática, confiante, acolhedora e com leve carisma. Nunca use cumprimentos genéricos como "oi, tudo bem?". Use respostas curtas, claras e completas, sem omitir o essencial. Não inclua chamadas de ação textuais redundantes como "🌟 Quero o Pacote Completo" no texto, pois os botões aparecem abaixo. Incentive a compra de forma natural, ex: “Se quiser, posso te enviar o link agora mesmo 😊”. 
         
-Use como base todas as informações de receitas, formatos, formas de pagamento, suporte, bônus, diferenciais etc. abaixo para adaptar respostas, respondendo sem repetições finais redundantes.
+Use como base todas as informações de receitas, formatos, formas de pagamento, suporte, bônus, diferenciais etc. abaixo para adaptar respostas:
 
 1. Receitas: exemplos como Pão de Frigideira, Vapt-Vupt, Hambúrguer, Vegano, Castanhas, Mandioquinha com Chia, Amêndoas, Cenoura, Baguete, Batata Doce de Micro-ondas. Divididas entre e-books, bônus só após compra. Todas sem glúten e sem lactose. Muitas veganas, substituições ensinadas. Bônus de doces sem açúcar para diabéticos no pacote completo. Ingredientes acessíveis. Ebook 50 receitas (~80 págs); Guia 125 receitas (>200 págs). Fotos prontas. Salgadas e doces. Rápidas (<30 min). Medidas em xícaras e gramas. Substitutos para ovos/alergênicos. Bônus "Bolos Sem Glúten" para festas. Algumas opções low-carb no completo. Fermentação natural em bônus. Variedade: pães, bolos, biscoitos, salgados.
 
@@ -476,7 +464,7 @@ Regras de botões:
 - Não envie botões se não houver interesse explícito.
 - Se trocar de ideia, ajuste botões conforme novo interesse.
 - Use pequena pausa (1-2s) antes de "gravar" ou digitar resposta.
-- Nunca envie textos longos: responda curto e objetivo, sem repetições finais.
+- Nunca envie textos longos: responda curto e objetivo.
 - Se pergunta sobre qualidade, ingredientes, tempo, dietas, restrições, preços, formatos, bônus, reembolso, acesso, dúvidas técnicas: use as respostas acima adaptadas ao tom.
 - Se fora do escopo, responda: "Esse assunto foge um pouco do que eu costumo compartilhar por aqui, mas posso te ajudar com receitas incríveis sem glúten e sem lactose! 💙"
 
@@ -487,24 +475,22 @@ Larissa:`;
       }
 
       window.onload = async () => {
-        // Fluxo inicial com as mensagens pré-definidas intactas
-        await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Olá tudo bem? Eu me chomo Larissa Campos, fico feliz que esteja interessada nas minhas Receitinhas saudáveis.");
-        await simulateTyping("🍞Você está diante da oportunidade de aprender a fazer receitas sem glúten incríveis, fofinhos e deliciosos, que vão surpreender todo mundo!<br><br>- 50 receitas exclusivas<br>- Sem Glúten e Sem Lactose<br>- Ingredientes de fácil acesso<br>- ⁠Suporte no Whatsapp<br>- Acesso Vitalício<br><br>🔴Tudo isso por apenas <strong>R$ 9,90</strong>!");
-        // Mostrar indicador de gravação do bot como mensagem
-        const recordingEl = document.createElement("div");
-        recordingEl.className = "bot-recording-indicator";
-        recordingEl.innerHTML = `<img src="balao.webp" alt="Gravando">`;
-        document.getElementById("chatBody").appendChild(recordingEl);
+        await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Eu sou a Larissa Campos. Fico feliz que você esteja aqui.");
+        await simulateTyping("🍞 Receitas sem glúten incríveis, fofinhas e deliciosas!<br><br>- 50 receitas exclusivas<br>- Sem glúten e sem lactose<br>- Ingredientes fáceis<br>- Suporte via WhatsApp<br>- Acesso vitalício<br><br>🔴 Apenas R$ 9,90!");
+        const recWait = document.createElement("div");
+        recWait.className = "bot-recording-indicator";
+        recWait.innerHTML = `<img src="gravabot.webp" class="bot-recording-img">`;
+        document.getElementById("chatBody").appendChild(recWait);
         document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
         await new Promise(r => setTimeout(r, 3000));
-        recordingEl.remove();
+        recWait.remove();
         await showAudioMessage(audioVoice1, false);
         await waitForAudioToFinish(audioVoice1);
-        await simulateTyping("✨ Posso te mostrar uma prévia? Você vai se surpreender com o que tem lá 😍");
+        await simulateTyping("✨ Posso te mostrar uma prévia? Você vai se surpreender 😍");
         appendMessage("bot", `
           <div class="option-buttons">
-            <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
-            <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
+            <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
+            <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
           </div>`);
       };
 
@@ -522,10 +508,9 @@ Larissa:`;
         appendMessage("user", option);
         lastOptionSelected = option;
         currentPackage = option.toLowerCase().includes('completo') ? 'completo' : 'basico';
-        // indicador de gravação bot como mensagem
         const recEl = document.createElement("div");
         recEl.className = "bot-recording-indicator";
-        recEl.innerHTML = `<img src="balao.webp" alt="Gravando">`;
+        recEl.innerHTML = `<img src="gravabot.webp" class="bot-recording-img">`;
         document.getElementById("chatBody").appendChild(recEl);
         document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
         await new Promise(r => setTimeout(r, Math.random() * 2000 + 2000));
@@ -587,25 +572,19 @@ Larissa:`;
         const detailsHTML = `
           <div style="margin-top: 10px;">
             <p>📚 <strong>Pacote Completo - Tudo o que você vai receber:</strong></p>
-            <p>✅ Guia Pães Sem Glúten com 125 receitas</p>
-            <p>✅ Acesso vitalício e todas as atualizações</p>
-            <p>✅ Comunidade exclusiva no WhatsApp</p>
-            <p>✅ 6 E-books extras:</p>
-            <p>• Doces sem Açúcar</p>
-            <p>• Bolos Sem Glúten</p>
-            <p>• Panetone &amp; Chocotone</p>
-            <p>• Substituições de Ingredientes</p>
-            <p>• Pães Trançados</p>
-            <p>• Fermentação Natural</p>
-            <p>🔴 Investimento: <strong>R$ 19,90</strong> (valor promocional)</p>
+            <p>✅ Guia "Pães Sem Glúten" com 125 receitas</p>
+            <p>✅ Acesso vitalício + atualizações</p>
+            <p>✅ Comunidade exclusiva no WhatsApp para troca entre alunos e comigo</p>
+            <p>✅ 6 E-books extras com receitas e técnicas</p>
+            <p>🔴 Investimento: <strong>R$ 19,90</strong></p>
           </div>
         `;
         await simulateTyping(detailsHTML);
-        await simulateTyping("O que achou? Quer garantir seu acesso?");
+        await simulateTyping("Quer garantir acesso?");
         appendMessage("bot", `
           <div class="option-buttons">
-            <button class="option-button" onclick="handleBuyInterest('Quero o Pacote Completo')">Quero o Completo 🌟</button>
-            <button class="option-button" onclick="handleBuyInterest('Ver Pacote Básico')">Ver Pacote Básico</button>
+            <button class="option-button" onclick="handleBuyInterest('Quero o Pacote Completo')">🌟 Quero o Pacote Completo</button>
+            <button class="option-button" onclick="handleBuyInterest('Ver Pacote Básico')">Comprar 50 Receitas ✅</button>
           </div>`);
       }
 
@@ -615,25 +594,25 @@ Larissa:`;
           <div style="margin-top: 10px;">
             <img src="receita1.webp" alt="Receita 1" class="preview-image">
             <img src="receita2.webp" alt="Receita 2" class="preview-image">
-            <p>😍 Impressionante, né? São 50 receitas incríveis!</p>
-            <p>🔴 Investimento: <strong>R$ 9,90</strong> (valor promocional)</p>
+            <p>😍 Incrível! 50 receitas exclusivas.</p>
+            <p>🔴 Investimento: <strong>R$ 9,90</strong></p>
           </div>
         `;
         await simulateTyping(imagesHTML);
-        await simulateTyping("O que você achou? Posso te mostrar como adquirir?");
+        await simulateTyping("Quer ver como adquirir?");
         appendMessage("bot", `
           <div class="option-buttons">
-            <button class="option-button" onclick="handleBuyInterest('Sim, quero comprar')">Sim, quero comprar</button>
+            <button class="option-button" onclick="handleBuyInterest('Sim, quero comprar')">Comprar 50 Receitas ✅</button>
             <button class="option-button" onclick="handleBuyInterest('Mais informações')">Mais informações</button>
           </div>`);
       }
 
       const personalizedMessages = [
-        "Ótima escolha! Você vai amar o conteúdo e as receitas vão transformar sua cozinha.",
-        "Excelente decisão! Prepare-se para receber receitas incríveis e saudáveis.",
-        "Você fez uma escolha maravilhosa! Em breve, seu e-book estará a caminho.",
-        "Que bom que escolheu este pacote! Tenho certeza de que vai adorar cada receita.",
-        "Perfeito! Seu investimento em receitas saudáveis vai valer cada centavo."
+        "Ótima escolha! Você vai amar as receitas.",
+        "Excelente decisão! Conteúdos que facilitam sua vida.",
+        "Escolha maravilhosa! Mal posso esperar pelo seu feedback.",
+        "Que bom! Tenho certeza que vai gostar.",
+        "Perfeito! Vale cada centavo."
       ];
 
       function getRandomPersonalized() {
@@ -646,44 +625,36 @@ Larissa:`;
         if (lower.includes("ver pacote básico")) {
           currentPackage = 'basico';
           shownBasicoDetails = true;
-          await simulateTyping("Claro! Vou mostrar mais sobre o Ebook Básico.");
-          // bot gravação indicador como mensagem
-          const recEl = document.createElement("div");
-          recEl.className = "bot-recording-indicator";
-          recEl.innerHTML = `<img src="balao.webp" alt="Gravando">`;
-          document.getElementById("chatBody").appendChild(recEl);
-          document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
-          await waitForAudioToFinish(audioPrevia);
-          recEl.remove();
+          await simulateTyping("Claro! Meu Ebook Básico tem 50 receitas sem glúten e sem lactose.");
           await showAudioMessage(audioPrevia, false);
           await waitForAudioToFinish(audioPrevia);
           const imagesHTML = `
             <div style="margin-top: 10px;">
               <img src="receita1.webp" alt="Receita 1" class="preview-image">
               <img src="receita2.webp" alt="Receita 2" class="preview-image">
-              <p>😍 Impressionante, né? São 50 receitas incríveis!</p>
-              <p>🔴 Investimento: <strong>R$ 9,90</strong> (valor promocional)</p>
+              <p>😍 50 receitas incríveis!</p>
+              <p>🔴 R$ 9,90</p>
             </div>
           `;
           await simulateTyping(imagesHTML);
-          await simulateTyping("O Ebook Básico oferece 50 receitas saborosas, sem glúten e sem lactose, perfeitas para uma alimentação mais saudável e equilibrada. Por apenas R$ 9,90, clique no botão abaixo para finalizar.");
+          await simulateTyping("Tenho 50 receitas que facilitam seu dia a dia. Por R$ 9,90, clique abaixo.");
           await showBuyOptions();
         } else if (lower.includes("mais informações")) {
           if (currentPackage === 'completo') {
-            await simulateTyping("Claro! O Pacote Completo inclui 125 receitas de pães sem glúten, acesso vitalício a todas as atualizações, comunidade exclusiva no WhatsApp e 6 e-books extras com técnicas avançadas. Por R$ 19,90, clique no botão abaixo para finalizar.");
+            await simulateTyping("Pacote Completo: 125 receitas de pães sem glúten, atualizações vitalícias, comunidade e 6 bônus. R$ 19,90.");
           } else {
-            await simulateTyping("Claro! O Ebook Básico oferece 50 receitas saudáveis, sem glúten e sem lactose, testadas e aprovadas para facilitar seu dia a dia. Por R$ 9,90, clique no botão abaixo para finalizar.");
+            await simulateTyping("Ebook Básico: 50 receitas sem glúten e sem lactose, acesso vitalício e suporte. R$ 9,90.");
           }
           await showBuyOptions();
         } else if (lower.includes("quero o pacote completo") || lower.includes("quero o completo")) {
           currentPackage = 'completo';
           await simulateTyping(getRandomPersonalized());
-          await simulateTyping("O Pacote Completo inclui 125 receitas de pães sem glúten, acesso vitalício, comunidade exclusiva no WhatsApp e 6 e-books extras. Por R$ 19,90, clique no botão abaixo para finalizar.");
+          await simulateTyping("Pacote Completo: 125 receitas, atualizações, comunidade e 6 bônus. R$ 19,90.");
           await showBuyOptions();
         } else if (lower.includes("50 receitas") || lower.includes("sim, quero comprar") || lower.includes("quero as 50")) {
           currentPackage = 'basico';
           await simulateTyping(getRandomPersonalized());
-          await simulateTyping("O Ebook Básico oferece 50 receitas saborosas, sem glúten e sem lactose, perfeitas para uma alimentação mais saudável e equilibrada. Por R$ 9,90, clique no botão abaixo para finalizar.");
+          await simulateTyping("Ebook Básico: 50 receitas sem glúten e sem lactose. R$ 9,90.");
           await showBuyOptions();
         } else {
           await simulateTyping(getRandomPersonalized());
@@ -693,7 +664,7 @@ Larissa:`;
 
       async function handlePurchaseClick(packageType) {
         appendMessage("user", packageType === 'completo' ? 'Quero o Pacote Completo' : 'Quero as 50 Receitas');
-        await simulateTyping("Ótima escolha! Em breve você será redirecionado para finalizar a compra.");
+        await simulateTyping("Ótima escolha! Você será redirecionado em instantes.");
         setTimeout(() => {
           window.location.href = packageType === 'completo' ? CHECKOUT_COMPLETO : CHECKOUT_BASICO;
         }, 1000);
@@ -705,34 +676,34 @@ Larissa:`;
           appendMessage("bot", `
             <div class="buy-options">
               <button class="buy-button" onclick="handlePurchaseClick('basico')">
-                QUERO AS 50 RECEITAS - R$ 9,90
+                Comprar 50 Receitas ✅
               </button>
             </div>
           `);
-          await simulateTyping("Ou, se preferir, você pode adquirir o Pacote Completo com muito mais conteúdo:");
+          await simulateTyping("Ou pode escolher o Pacote Completo:");
           appendMessage("bot", `
             <div class="buy-options">
               <button class="buy-button" onclick="handlePurchaseClick('completo')">
-                QUERO O PACOTE COMPLETO - R$ 19,90
+                🌟 Quero o Pacote Completo
               </button>
             </div>`);
         } else {
           appendMessage("bot", `
             <div class="buy-options">
               <button class="buy-button" onclick="handlePurchaseClick('completo')">
-                QUERO O PACOTE COMPLETO - R$ 19,90
+                🌟 Quero o Pacote Completo
               </button>
             </div>
           `);
-          await simulateTyping("Ou, se preferir, você pode adquirir apenas o Ebook Básico com 50 receitas:");
+          await simulateTyping("Ou pode optar pelo Ebook Básico:");
           appendMessage("bot", `
             <div class="buy-options">
               <button class="buy-button" onclick="handlePurchaseClick('basico')">
-                QUERO AS 50 RECEITAS - R$ 9,90
+                Comprar 50 Receitas ✅
               </button>
             </div>`);
         }
-        await simulateTyping("Qualquer dúvida é só me chamar! 😊");
+        await simulateTyping("Qualquer dúvida, estou aqui 😊");
       }
 
       function handleKeyPress(event) {
@@ -763,7 +734,7 @@ Larissa:`;
           isWaitingResponse = false;
           return;
         }
-        // Redes sociais
+        // Perguntas sobre redes sociais
         if (normalized.includes('instagram') || normalized.includes('facebook') || normalized.includes('rede social') || normalized.includes('seguir')) {
           hideTypingIndicator();
           await simulateTyping("Siga-me:\nhttps://www.instagram.com/receitinhasdalari\nhttps://www.facebook.com/share/1ErC8vLffa/");
@@ -779,8 +750,8 @@ Larissa:`;
           } else {
             appendMessage("bot", `
               <div class="option-buttons">
-                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
               </div>`);
           }
           isWaitingResponse = false;
@@ -806,7 +777,7 @@ Larissa:`;
             normalized.includes('sem glúten') || normalized.includes('sem gluten') ||
             normalized.includes('sem lactose')) {
           hideTypingIndicator();
-          await simulateTyping("Todas as receitas são 100% sem glúten e sem lactose, adequadas para intolerantes.");
+          await simulateTyping("Todas as minhas receitas são 100% sem glúten e sem lactose, adequadas para celíacos e intolerantes. Uso ingredientes fáceis e garanto sabor.");
           if (currentPackage === 'completo') {
             appendMessage("bot", `
               <div class="buy-options">
@@ -819,8 +790,8 @@ Larissa:`;
           } else {
             appendMessage("bot", `
               <div class="option-buttons">
-                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
               </div>`);
           }
           isWaitingResponse = false;
@@ -845,8 +816,8 @@ Larissa:`;
           } else {
             appendMessage("bot", `
               <div class="option-buttons">
-                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
               </div>`);
           }
           isWaitingResponse = false;
@@ -863,7 +834,7 @@ Larissa:`;
         // Comunidade
         if (normalized.includes('comunidade') || normalized.includes('whatsapp') || normalized.includes('grupo')) {
           hideTypingIndicator();
-          await simulateTyping("A comunidade exclusiva está no Pacote Completo. Para participar, clique no botão.");
+          await simulateTyping("A comunidade exclusiva no WhatsApp está no Pacote Completo. Para participar, clique no botão abaixo.");
           appendMessage("bot", `
             <div class="buy-options">
               <button class="buy-button" onclick="handlePurchaseClick('completo')">
@@ -882,8 +853,8 @@ Larissa:`;
           } else {
             appendMessage("bot", `
               <div class="option-buttons">
-                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
               </div>`);
           }
           isWaitingResponse = false;
@@ -898,8 +869,8 @@ Larissa:`;
           } else {
             appendMessage("bot", `
               <div class="option-buttons">
-                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
               </div>`);
           }
           isWaitingResponse = false;
@@ -914,8 +885,8 @@ Larissa:`;
           } else {
             appendMessage("bot", `
               <div class="option-buttons">
-                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
               </div>`);
           }
           isWaitingResponse = false;
@@ -930,8 +901,8 @@ Larissa:`;
           } else {
             appendMessage("bot", `
               <div class="option-buttons">
-                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+                <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+                <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
               </div>`);
           }
           isWaitingResponse = false;
@@ -973,9 +944,9 @@ Larissa:`;
           hideTypingIndicator();
           if (!shownCompletoDetails) {
             shownCompletoDetails = true;
-            await simulateTyping("O Pacote Completo inclui Guia Pães Sem Glúten com 125 receitas, acesso vitalício com todas as atualizações, comunidade exclusiva no WhatsApp e 6 e-books extras. Tudo por R$ 19,90.");
+            await simulateTyping("Pacote Completo: 125 receitas de pães sem glúten, atualizações vitalícias, comunidade exclusiva e 6 bônus. R$ 19,90.");
           } else {
-            await simulateTyping("Pacote Completo: 125 receitas sem glúten + comunidade + 6 bônus + acesso vitalício. R$ 19,90.");
+            await simulateTyping("Pacote Completo: 125 receitas + comunidade + 6 bônus + acesso vitalício. R$ 19,90.");
           }
           currentPackage = 'completo';
           appendMessage("bot", `
@@ -992,9 +963,9 @@ Larissa:`;
           hideTypingIndicator();
           if (!shownBasicoDetails) {
             shownBasicoDetails = true;
-            await simulateTyping("O Ebook Básico oferece 50 receitas saborosas, sem glúten e sem lactose, ingredientes de fácil acesso, suporte via WhatsApp e acesso vitalício. Por apenas R$ 9,90.");
+            await simulateTyping("Ebook Básico: 50 receitas sem glúten e sem lactose, ingredientes fáceis, suporte e acesso vitalício. R$ 9,90.");
           } else {
-            await simulateTyping("Ebook Básico: 50 receitas sem glúten e sem lactose, suporte e acesso vitalício. R$ 9,90.");
+            await simulateTyping("Ebook Básico: 50 receitas, sem glúten/lactose, suporte e acesso vitalício. R$ 9,90.");
           }
           currentPackage = 'basico';
           await showBuyOptions();
@@ -1009,9 +980,9 @@ Larissa:`;
             currentPackage = 'completo';
             if (!shownCompletoDetails) {
               shownCompletoDetails = true;
-              await simulateTyping("Pacote Completo: 125 receitas, comunidade e 6 bônus. R$ 19,90.");
+              await simulateTyping("Ótima escolha! Pacote Completo: 125 receitas, comunidade e 6 bônus. R$ 19,90.");
             } else {
-              await simulateTyping("Pacote Completo por R$ 19,90.");
+              await simulateTyping("Ótima escolha! Pacote Completo por R$ 19,90.");
             }
             appendMessage("bot", `
               <div class="buy-options">
@@ -1023,16 +994,16 @@ Larissa:`;
             currentPackage = 'basico';
             if (!shownBasicoDetails) {
               shownBasicoDetails = true;
-              await simulateTyping("Ebook Básico: 50 receitas sem glúten e sem lactose. R$ 9,90.");
+              await simulateTyping("Ótima escolha! Ebook Básico: 50 receitas sem glúten/lactose. R$ 9,90.");
             } else {
-              await simulateTyping("Ebook Básico por R$ 9,90.");
+              await simulateTyping("Ótima escolha! Ebook Básico por R$ 9,90.");
             }
             await showBuyOptions();
           }
           isWaitingResponse = false;
           return;
         }
-        // Fora do fluxo: usar Gemini
+        // Fora do fluxo: usar Gemini com prompt sensível
         hideTypingIndicator();
         const systemPrompt = buildSystemPrompt(text);
         const finalPrompt = systemPrompt + "\n\nCliente: " + text + "\nLarissa:";
@@ -1047,7 +1018,7 @@ Larissa:`;
           });
           const data = await res.json();
           hideTypingIndicator();
-          let reply = "Não entendi. Pode reformular?";
+          let reply = "Desculpe, não entendi. Pode reformular?";
           if (!data.error && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
             reply = data.candidates[0].content.parts[0].text.trim();
           }
@@ -1069,11 +1040,11 @@ Larissa:`;
           }
         } catch (err) {
           hideTypingIndicator();
-          appendMessage("bot", "Erro ao processar. Tente novamente.");
+          appendMessage("bot", "Ocorreu um erro ao processar sua pergunta. Tente novamente.");
           appendMessage("bot", `
             <div class="option-buttons">
-              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-              <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+              <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
             </div>`);
         } finally {
           isWaitingResponse = false;
@@ -1111,16 +1082,16 @@ Larissa:`;
       }
 
       async function handleTrustQuestion(message) {
-        await simulateTyping("Pode ficar tranquila! Todos meus materiais são digitais e entregues automaticamente após a compra.");
+        await simulateTyping("Pode ficar tranquila! Meus materiais são digitais e entregues automaticamente após a compra.");
         appendMessage("bot", `<img src="depoimento.webp" alt="Depoimentos" class="testimonial-image">`);
-        await simulateTyping("Aqui está a prova do carinho dos meus clientes! São receitas que realmente funcionam e fazem a diferença. A Kiwify garante sua compra com segurança total.");
+        await simulateTyping("Aqui está a prova do carinho: receitas que funcionam. Kiwify garante segurança.");
         if (conversationStage >= 1) {
           await showBuyOptions();
         } else {
           appendMessage("bot", `
             <div class="option-buttons">
-              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-              <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+              <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
             </div>`);
         }
       }
@@ -1128,28 +1099,28 @@ Larissa:`;
       async function showLarissaProfile() {
         const profileHTML = `
           <img src="larissa.webp" alt="Larissa Campos" class="profile-image">
-          <p>Eu sou a Larissa Campos, nutricionista e chef de Florianópolis (SC). Minha paixão pela cozinha começou por amor — amor pela minha mãe, que tem intolerância à lactose, e pelo meu irmão, que é celíaco.</p>
-          <p>Crio receitas sem glúten e sem lactose que sejam simples, gostosas e acolhedoras, para ajudar pessoas a redescobrirem o prazer de comer bem.</p>
+          <p>Eu sou a Larissa Campos, nutricionista e chef de Florianópolis (SC). Minha paixão veio do amor à minha mãe intolerante à lactose e meu irmão celíaco.</p>
+          <p>Crio receitas sem glúten e sem lactose para ajudar você a comer bem.</p>
         `;
         await simulateTyping(profileHTML);
         if (conversationStage === 0) {
           appendMessage("bot", `
             <div class="option-buttons">
-              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-              <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+              <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
             </div>`);
         }
       }
 
       async function showHowToBuy() {
-        await simulateTyping("<p>A compra é bem simples e segura:</p><p>1. Clique no botão do e-book escolhido.</p><p>2. Será redirecionado para Kiwify.</p><p>3. Preencha dados e pagamento.</p><p>4. Após aprovação, você recebe o e-book por e-mail.</p>");
+        await simulateTyping("<p>Compra simples e segura:</p><p>1. Clique no botão do e-book escolhido.</p><p>2. Vá para Kiwify.</p><p>3. Preencha dados e pagamento.</p><p>4. Após aprovação, receba por e-mail.</p>");
         if (currentPackage) {
           await showBuyOptions();
         } else {
           appendMessage("bot", `
             <div class="option-buttons">
-              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">As 50 Receitas ❤️</button>
-              <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🥹</button>
+              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">Comprar 50 Receitas ✅</button>
+              <button class="option-button" onclick="handleOptionClick('Pacote Completo')">Pacote Completo 🌟</button>
             </div>`);
         }
       }
