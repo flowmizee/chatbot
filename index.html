@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-    <title>Chef Larissa Campos</title>
+    <title>Chat Web Estilo WhatsApp</title>
     <style>
       html, body {
         margin: 0;
@@ -108,6 +108,7 @@
         padding: 8px 10px;
         background-color: #fff;
         border-top: 1px solid #ccc;
+        align-items: center;
       }
       .chat-footer input {
         flex: 1;
@@ -127,9 +128,19 @@
         font-size: 16px;
         border-radius: 20px;
         cursor: pointer;
+        margin-left: 4px;
       }
       .chat-footer button:hover {
         background-color: #0b7a67;
+      }
+      .chat-footer #micButton {
+        background-color: transparent;
+        color: #075E54;
+        font-size: 20px;
+        padding: 0 8px;
+      }
+      .chat-footer #micButton.recording {
+        color: red;
       }
       .option-buttons {
         display: flex;
@@ -275,6 +286,7 @@
       </div>
       <div class="chat-body" id="chatBody"></div>
       <div class="chat-footer">
+        <button id="micButton" title="Gravar mensagem de voz">🎤</button>
         <input type="text" id="userInput" placeholder="Digite sua mensagem..." onkeypress="handleKeyPress(event)">
         <button onclick="sendMessage()" id="sendButton">Enviar</button>
       </div>
@@ -316,8 +328,52 @@
         });
       });
 
+      // Web Speech API para gravação de voz e transcrição
+      let recognition;
+      const micButton = document.getElementById('micButton');
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.onstart = () => {
+          micButton.classList.add('recording');
+          // mostrar indicativo de gravação
+          const recEl = document.createElement("div");
+          recEl.className = "recording-indicator";
+          recEl.id = "recordingIndicator";
+          recEl.innerHTML = `<div class="recording-dot"></div>`;
+          document.getElementById("chatBody").appendChild(recEl);
+          document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
+        };
+        recognition.onend = () => {
+          micButton.classList.remove('recording');
+          const recEl = document.getElementById("recordingIndicator");
+          if (recEl) recEl.remove();
+        };
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          const inputEl = document.getElementById("userInput");
+          inputEl.value = transcript;
+          // opcional: enviar automaticamente após transcrição
+          sendMessage();
+        };
+        micButton.addEventListener('click', () => {
+          if (recognition) {
+            try {
+              recognition.start();
+            } catch (e) {
+              // ignore start errors
+            }
+          }
+        });
+      } else {
+        micButton.style.display = 'none';
+      }
+
       function buildSystemPrompt(userMessage) {
-        let prompt = `Você é a Chef Larissa Campos, chef e nutricionista especializada em receitas sem glúten e sem lactose. Responda sempre em primeira pessoa do singular (eu), de forma direta, simpática, confiante, acolhedora e com leve carisma. Nunca use cumprimentos genéricos como "oi, tudo bem?". Use respostas curtas, claras e completas, sem omitir o essencial. Incentive a compra de forma natural, ex: “Se quiser, posso te enviar o link agora mesmo 😊”. 
+        let prompt = `Você é a Chef Larissa Campos, chef e nutricionista especializada em receitas sem glúten e sem lactose. Responda sempre em primeira pessoa do singular (eu), de forma direta, simpática, confiante, acolhedora e com leve carisma. Nunca use cumprimentos genéricos como "oi, tudo bem?". Use respostas curtas, claras e completas, sem omitir o essencial. Não inclua chamadas de ação textuais redundantes como "🌟 Quero o Pacote Completo" no texto, pois os botões aparecem abaixo. Incentive a compra de forma natural, ex: “Se quiser, posso te enviar o link agora mesmo 😊”. 
         
 Use como base todas as informações de receitas, formatos, formas de pagamento, suporte, bônus, diferenciais etc. abaixo para adaptar respostas:
 
@@ -351,9 +407,9 @@ Regras de botões:
 - Não envie botões se não houver interesse explícito.
 - Se trocar de ideia, ajuste botões conforme novo interesse.
 - Use pequena pausa (1-2s) antes de “gravar” ou digitar resposta.
-- Nunca envie textos longos: responda curto e objetivo, separando visualmente se necessário.
+- Nunca envie textos longos: responda curto e objetivo.
 - Se pergunta sobre qualidade, ingredientes, tempo, dietas, restrições, preços, formatos, bônus, reembolso, acesso, dúvidas técnicas: use as respostas acima adaptadas ao tom.
-- Se fora do escopo (ex: política, religião, etc.), responda: “Esse assunto foge um pouco do que eu costumo compartilhar por aqui, mas posso te ajudar com receitas incríveis sem glúten e sem lactose! 💙”
+- Se fora do escopo, responda: “Esse assunto foge um pouco do que eu costumo compartilhar por aqui, mas posso te ajudar com receitas incríveis sem glúten e sem lactose! 💙”
 
 Contexto: ${lastOptionSelected ? 'última seleção: ' + lastOptionSelected : 'início'}.
 Cliente: ${userMessage}
@@ -362,8 +418,8 @@ Larissa:`;
       }
 
       window.onload = async () => {
-        await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Olá! tudo bem? Eu sou a Larissa Campos. Fico feliz que você esteja interessada nas minhas Receitinhas Saudáveis.");
-        await simulateTyping("🍞 Você está diante da oportunidade de aprender a fazer receitas sem glúten incríveis, fofinhos e deliciosos, que vão surpreender todo mundo!<br><br>- 50 receitas exclusivas<br>- Sem glúten e sem lactose<br>- Ingredientes fáceis<br>- Suporte via WhatsApp<br>- Acesso vitalício<br><br>🔴 Apenas R$ 9,90!");
+        await simulateTyping("👩‍🍳 <strong>Chef Larissa Campos:</strong><br>Eu sou a Larissa Campos. Fico feliz que você esteja aqui.");
+        await simulateTyping("🍞 Receitas sem glúten incríveis, fofinhas e deliciosas!<br><br>- 50 receitas exclusivas<br>- Sem glúten e sem lactose<br>- Ingredientes fáceis<br>- Suporte via WhatsApp<br>- Acesso vitalício<br><br>🔴 Apenas R$ 9,90!");
         const recordingEl = document.createElement("div");
         recordingEl.className = "recording-indicator";
         recordingEl.innerHTML = `<div class="recording-dot"></div>`;
@@ -461,7 +517,7 @@ Larissa:`;
             <p>📚 <strong>Pacote Completo - Tudo o que você vai receber:</strong></p>
             <p>✅ Guia "Pães Sem Glúten" com 125 receitas</p>
             <p>✅ Acesso vitalício + atualizações</p>
-            <p>✅ Comunidade exclusiva no WhatsApp</p>
+            <p>✅ Comunidade exclusiva no WhatsApp para troca entre alunos e comigo</p>
             <p>✅ 6 E-books extras com receitas e técnicas</p>
             <p>🔴 Investimento: <strong>R$ 19,90</strong></p>
           </div>
