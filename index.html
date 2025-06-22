@@ -124,6 +124,7 @@
         margin-right: 8px;
         background-color: #f0f0f0;
         outline: none;
+        padding-left: 40px;
       }
       .chat-footer button#actionButton {
         width: 40px;
@@ -202,12 +203,6 @@
         margin-top: 10px;
         margin-right: 10px;
       }
-      .upload-label img {
-        width: 20px;
-        height: 20px;
-        vertical-align: middle;
-        margin-right: 8px;
-      }
       #uploadComprovanteFoto, #uploadComprovantePDF {
         display: none;
       }
@@ -256,14 +251,6 @@
         flex-wrap: wrap;
         gap: 10px;
         margin-top: 10px;
-      }
-      .whatsapp-input {
-        width: 100%;
-        padding: 10px;
-        border: 1px solid #075E54;
-        border-radius: 20px;
-        margin-top: 10px;
-        font-size: 14px;
       }
       /* NOVO ESTILO DO ÁUDIO - IGUAL AO WHATSAPP */
       .audio-message {
@@ -348,15 +335,42 @@
         height: 32px;
         animation: pulse 1.5s infinite ease-in-out;
       }
+      .user-recording-indicator {
+        position: absolute;
+        left: 35px;
+        display: flex;
+        align-items: center;
+      }
+      .user-recording-img {
+        width: 24px;
+        height: 24px;
+        margin-right: 8px;
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+      .user-recording-time {
+        font-size: 14px;
+        color: #555;
+        position: absolute;
+        left: 45px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
       @keyframes pulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.3; }
       }
-      .buy-options {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 15px;
+      .mic-icon {
+        position: absolute;
+        left: 15px;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        animation: pulse 1.5s infinite ease-in-out;
+        display: none;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
       }
     </style>
   </head>
@@ -368,9 +382,11 @@
       </div>
       <div class="chat-body" id="chatBody"></div>
       <div class="chat-footer">
+        <img src="gravaperson.webp" alt="Gravar" class="mic-icon" id="micIcon">
+        <span class="user-recording-time" id="recordingTime" style="display: none;">0:00</span>
         <input type="text" id="userInput" placeholder="Digite sua mensagem..." oninput="updateActionIcon()" onkeypress="handleKeyPress(event)">
-        <button id="actionButton" title="Enviar">
-          <img id="actionIcon" src="mensagem.webp" alt="Ícone">
+        <button id="actionButton" title="Gravar ou enviar">
+          <img id="actionIcon" src="gravacao.webp" alt="Ícone">
         </button>
       </div>
     </div>
@@ -403,6 +419,8 @@
       let isWaitingWhatsappNumber = false;
       let activeAudio = null;
       let audioEndListener = null;
+      let recordingStartTime = null;
+      let recordingTimer = null;
 
       // Áudios de agradecimento
       const audioAgradecimento1 = new Audio('agradecimento1.mp3');
@@ -426,13 +444,69 @@
         });
       });
 
+      // Web Speech API para gravação de voz
+      let recognition;
       const actionButton = document.getElementById('actionButton');
       const actionIcon = document.getElementById('actionIcon');
       const userInput = document.getElementById('userInput');
+      const micIcon = document.getElementById('micIcon');
+      const recordingTime = document.getElementById('recordingTime');
+
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR';
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.onstart = () => {
+          startRecordingUI();
+          recordingStartTime = new Date();
+          updateRecordingTime();
+        };
+        recognition.onend = () => {
+          stopRecordingUI();
+          if (recordingTimer) {
+            clearInterval(recordingTimer);
+            recordingTimer = null;
+          }
+        };
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          userInput.value = transcript;
+          updateActionIcon();
+          sendMessage();
+        };
+      }
+
+      function startRecordingUI() {
+        micIcon.style.display = 'block';
+        recordingTime.style.display = 'block';
+        userInput.placeholder = '';
+      }
+
+      function stopRecordingUI() {
+        micIcon.style.display = 'none';
+        recordingTime.style.display = 'none';
+        userInput.placeholder = 'Digite sua mensagem...';
+      }
+
+      function updateRecordingTime() {
+        recordingTimer = setInterval(() => {
+          const now = new Date();
+          const elapsed = Math.floor((now - recordingStartTime) / 1000);
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = elapsed % 60;
+          recordingTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+      }
 
       actionButton.addEventListener('click', () => {
         if (userInput.value.trim()) {
           sendMessage();
+        } else if (recognition) {
+          try {
+            recognition.start();
+          } catch (e) {}
         }
       });
 
@@ -440,7 +514,7 @@
         if (userInput.value.trim()) {
           actionIcon.src = 'mensagem.webp';
         } else {
-          actionIcon.src = 'mensagem.webp';
+          actionIcon.src = 'gravacao.webp';
         }
       }
 
@@ -1026,7 +1100,7 @@ Larissa:`;
             normalized.includes('sem glúten') || normalized.includes('sem gluten') ||
             normalized.includes('sem lactose')) {
           hideTypingIndicator();
-          await simulateTyping("Todas as receitas são 100% sem glúten e sem lactose, adequadas para intolerantes.");
+          await simulateTyping("Todas as receitas são 100% sem glúten e sem lactose — adequadas para intolerantes.");
           if (currentPackage === 'completo') {
             appendMessage("bot", `
               <div class="option-buttons">
