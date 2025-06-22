@@ -426,23 +426,70 @@
       const audioAgradecimento1 = new Audio('agradecimento1.mp3');
       const audioAgradecimento2 = new Audio('agradecimento2.mp3');
 
-      [audioAgradecimento1, audioAgradecimento2].forEach(audio => {
-        audio.addEventListener('play', function() {
-          if (activeAudio && activeAudio !== this) {
-            activeAudio.pause();
-            const playButtons = document.querySelectorAll('.play-button');
-            playButtons.forEach(btn => btn.classList.remove('playing'));
-          }
-          activeAudio = this;
-          const playButton = document.querySelector(`audio[src="${this.src}"]`)?.parentElement.querySelector('.play-button');
-          if (playButton) playButton.classList.add('playing');
+      // Configurar os áudios
+      function setupAudios() {
+        [audioAgradecimento1, audioAgradecimento2].forEach(audio => {
+          audio.addEventListener('play', function() {
+            // Pausar qualquer áudio que esteja tocando
+            if (activeAudio && activeAudio !== this) {
+              activeAudio.pause();
+              const playButtons = document.querySelectorAll('.play-button');
+              playButtons.forEach(btn => btn.classList.remove('playing'));
+            }
+            activeAudio = this;
+            
+            // Atualizar o botão de play correspondente
+            const audioElements = document.querySelectorAll('audio');
+            for (let audioEl of audioElements) {
+              if (audioEl.src === this.src) {
+                const playButton = audioEl.parentElement.querySelector('.play-button');
+                if (playButton) playButton.classList.add('playing');
+                break;
+              }
+            }
+          });
+          
+          audio.addEventListener('ended', function() {
+            const audioElements = document.querySelectorAll('audio');
+            for (let audioEl of audioElements) {
+              if (audioEl.src === this.src) {
+                const playButton = audioEl.parentElement.querySelector('.play-button');
+                if (playButton) playButton.classList.remove('playing');
+                break;
+              }
+            }
+            if (audioEndListener) { 
+              audioEndListener(); 
+              audioEndListener = null; 
+            }
+          });
+          
+          audio.addEventListener('pause', function() {
+            const audioElements = document.querySelectorAll('audio');
+            for (let audioEl of audioElements) {
+              if (audioEl.src === this.src) {
+                const playButton = audioEl.parentElement.querySelector('.play-button');
+                if (playButton) playButton.classList.remove('playing');
+                break;
+              }
+            }
+          });
         });
-        audio.addEventListener('ended', function() {
-          const playButton = document.querySelector(`audio[src="${this.src}"]`)?.parentElement.querySelector('.play-button');
-          if (playButton) playButton.classList.remove('playing');
-          if (audioEndListener) { audioEndListener(); audioEndListener = null; }
-        });
-      });
+      }
+
+      // Função para alternar play/pause do áudio
+      function toggleAudio(button) {
+        const audio = button.parentElement.querySelector('audio');
+        if (!audio) return;
+        
+        if (audio.paused) {
+          audio.play().catch(e => console.log("Erro ao reproduzir áudio:", e));
+          button.classList.add('playing');
+        } else {
+          audio.pause();
+          button.classList.remove('playing');
+        }
+      }
 
       // Web Speech API para gravação de voz
       let recognition;
@@ -568,6 +615,8 @@ Larissa:`;
       }
 
       window.onload = async () => {
+        setupAudios(); // Configurar os listeners dos áudios
+        
         // Fluxo inicial com as novas mensagens
         await simulateTyping("Oiê! Eu sou a <strong>Larissa Campos</strong>, nutricionista apaixonada por receitas saudáveis sem glúten e sem lactose. 💛🥰");
         await simulateTyping("😱 Sofre com glúten ou lactose e nada dá certo na cozinha? 🍞 Vem comigo! Você vai aprender a fazer pães incríveis, com ingredientes simples — e muito sabor!");
@@ -918,17 +967,6 @@ Larissa:`;
         }, 500);
       }
 
-      function toggleAudio(button) {
-        const audio = button.parentElement.querySelector('audio');
-        if (audio.paused) {
-          audio.play();
-          button.classList.add('playing');
-        } else {
-          audio.pause();
-          button.classList.remove('playing');
-        }
-      }
-
       function showComprovanteError() {
         const expectedAmount = currentPackage === 'completo' ? '19,90' : '9,90';
         
@@ -1131,7 +1169,7 @@ Larissa:`;
             normalized.includes('confirmar pagamento') || normalized.includes('recebimento'))) {
           hideTypingIndicator();
           if (currentPackage === 'completo') {
-            await simulateTyping("Assim que seu pagamento for confirmado, te envio <strong>tudo aqui no chat</strong> mesmo! Você receberá:<br>✔️ O link para baixar o <strong>Guia Completo com 125 Receitas + 6 Bônus</strong><br>✔️ Convite para o <strong>grupo exclusivo</strong> no WhatsApp<br>✔️ Meu contato direto para suporte<br><br>Fica tranquilo(a) que eu te guio passo a passo!");
+            await simulateTyping("Assim que seu pagamento for confirmado, te envio <strong>tudo aqui no chat</strong> mesmo! Você receberá:<br>✔️ O link para baixar o <strong>Guide Completo com 125 Receitas + 6 Bônus</strong><br>✔️ Convite para o <strong>grupo exclusivo</strong> no WhatsApp<br>✔️ Meu contato direto para suporte<br><br>Fica tranquilo(a) que eu te guio passo a passo!");
           } else {
             await simulateTyping("Assim que seu pagamento for confirmado, vou te enviar <strong>tudo direto aqui no chat</strong>! Você receberá:<br>✔️ O link para baixar seu <strong>E-book com 50 Receitas</strong> (em PDF)<br>✔️ Meu WhatsApp pessoal para tirar dúvidas<br><br>É super rápido! Se o link não aparecer em 2 minutinhos, me avisa que eu resolvo. 💛");
           }
