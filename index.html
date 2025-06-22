@@ -390,6 +390,15 @@
         </button>
       </div>
     </div>
+
+    <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "s28w44cz1e");
+    </script>
+
     <script>
       // Configuração do PDF.js
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js';
@@ -644,6 +653,7 @@ Larissa:`;
         else if (option === 'Grupo Grátis no WhatsApp') {
           await simulateTyping("Me manda seu número de WhatsApp com DDD (exemplo: 11999999999), que eu vou te colocar no nosso Grupo Free do WhasApp com receitinhas, dicas e conteúdos exclusivos. Eles são animadinhos! 🤭👇🏻");
           appendMessage("bot", `<img src="grupo.webp" alt="Grupo WhatsApp" class="preview-image">`);
+          await simulateTyping("No grupo você recebe:<br>• Receitas exclusivas grátis<br>• Dicas de ingredientes<br>• Novidades sobre alimentação saudável<br>• Comunidade de pessoas com interesses similares<br>• Avisos de promoções e lançamentos");
           await simulateTyping("Se preferir não passar agora, tá tudo bem! Você pode continuar por aqui mesmo escolhendo uma das opções abaixo.");
           
           appendMessage("bot", `
@@ -698,7 +708,8 @@ Larissa:`;
         appendMessage("user", option);
         const lower = option.toLowerCase();
         
-        if (lower.includes("garantir as 50 receitas") || lower.includes("quero o básico") || lower.includes("fico com o básico")) {
+        if (lower.includes("garantir as 50 receitas") || lower.includes("quero o básico") || lower.includes("fico com o básico") || 
+            lower.includes("quero comprar as 50") || lower.includes("vou comprar as 50")) {
           currentPackage = 'basico';
           // Mostrar as mensagens personalizadas
           await simulateTyping(personalizedMessages.basico[0]);
@@ -706,7 +717,8 @@ Larissa:`;
           await simulateTyping(personalizedMessages.basico[2]);
           await showPaymentOptions();
         } 
-        else if (lower.includes("quero o pacote completo") || lower.includes("quero o completo")) {
+        else if (lower.includes("quero o pacote completo") || lower.includes("quero o completo") || 
+                 lower.includes("quero comprar o pacote completo") || lower.includes("vou comprar o pacote completo")) {
           currentPackage = 'completo';
           // Mostrar as mensagens personalizadas
           await simulateTyping(personalizedMessages.completo[0]);
@@ -714,15 +726,17 @@ Larissa:`;
           await simulateTyping(personalizedMessages.completo[2]);
           await showPaymentOptions();
         }
-        else if (lower.includes("ver pacote básico") || lower.includes("tenho dúvidas") || lower.includes("saber mais sobre as 50 receitas")) {
+        else if (lower.includes("ver pacote básico") || lower.includes("tenho dúvidas") || lower.includes("saber mais sobre as 50 receitas") || 
+                 lower.includes("me explica sobre as 50 receitas") || lower.includes("detalhes das 50 receitas")) {
           currentPackage = 'basico';
           await show50ReceitasFlow();
         }
-        else if (lower.includes("ver pacote completo") || lower.includes("detalhes completo") || lower.includes("saber mais sobre o pacote completo")) {
+        else if (lower.includes("ver pacote completo") || lower.includes("detalhes completo") || lower.includes("saber mais sobre o pacote completo") || 
+                 lower.includes("me explica sobre o pacote completo") || lower.includes("detalhes do pacote completo")) {
           currentPackage = 'completo';
           await showPacoteCompletoFlow();
         }
-        else if (lower.includes("grupo free") || lower.includes("saber mais sobre o grupo")) {
+        else if (lower.includes("grupo free") || lower.includes("saber mais sobre o grupo") || lower.includes("detalhes do grupo")) {
           await handleOptionClick('Grupo Grátis no WhatsApp');
         }
         else {
@@ -1423,10 +1437,28 @@ Larissa:`;
 
       function detectPurchaseIntent(message) {
         const lowerMsg = message.toLowerCase();
-        if (lowerMsg.includes('quero o pacote completo') || lowerMsg.includes('125 receitas') || lowerMsg.includes('pacote completo') || lowerMsg.includes('vou ficar com o completo')) {
+        
+        // Verifica se é uma pergunta sobre o produto (não intenção de compra)
+        const isQuestion = lowerMsg.includes('?') || 
+                          lowerMsg.includes('quais') || 
+                          lowerMsg.includes('como') || 
+                          lowerMsg.includes('quando') || 
+                          lowerMsg.includes('onde') || 
+                          lowerMsg.includes('por que') || 
+                          lowerMsg.includes('porque') || 
+                          lowerMsg.includes('explica') || 
+                          lowerMsg.includes('detalhes') || 
+                          lowerMsg.includes('saber mais');
+        
+        if (isQuestion) {
+          return null; // Não é intenção de compra, é pergunta sobre o produto
+        }
+        
+        // Intenção de compra clara
+        if (lowerMsg.includes('quero o pacote completo') || lowerMsg.includes('125 receitas') || lowerMsg.includes('pacote completo') || lowerMsg.includes('vou ficar com o completo') || lowerMsg.includes('quero comprar o completo') || lowerMsg.includes('vou comprar o completo')) {
           return { package: 'completo' };
         }
-        if (lowerMsg.includes('quero as 50 receitas') || lowerMsg.includes('ebook básico') || lowerMsg.includes('50 receitas') || lowerMsg.includes('básico') || lowerMsg.includes('basico') || lowerMsg.includes('vou ficar com as 50')) {
+        if (lowerMsg.includes('quero as 50 receitas') || lowerMsg.includes('ebook básico') || lowerMsg.includes('50 receitas') || lowerMsg.includes('básico') || lowerMsg.includes('basico') || lowerMsg.includes('vou ficar com as 50') || lowerMsg.includes('quero comprar as 50') || lowerMsg.includes('vou comprar as 50')) {
           return { package: 'basico' };
         }
         if (lowerMsg.includes('quero comprar') || lowerMsg.includes('adquirir') || lowerMsg.includes('garantir') || lowerMsg.includes('vou comprar')) {
