@@ -192,12 +192,6 @@
         margin-top: 10px;
         border: 2px solid #075E54;
       }
-      .buy-options {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-top: 15px;
-      }
       .upload-label {
         display: inline-block;
         padding: 10px 15px;
@@ -271,65 +265,98 @@
         margin-top: 10px;
         font-size: 14px;
       }
+      /* NOVO ESTILO DO ÁUDIO - IGUAL AO WHATSAPP */
       .audio-message {
         display: flex;
         align-items: center;
         background-color: white;
-        border-radius: 8px;
-        padding: 10px;
-        max-width: 200px;
+        padding: 10px 15px;
+        border-radius: 15px;
         margin-bottom: 8px;
+        max-width: 300px;
+        width: 250px;
       }
-      .audio-message img {
-        width: 24px;
-        height: 24px;
+      .audio-message .play-button {
+        width: 30px;
+        height: 30px;
+        background-color: #25D366;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
         margin-right: 10px;
+        cursor: pointer;
+      }
+      .audio-message .play-button.playing {
+        background-color: #f44336;
+      }
+      .audio-message .play-button::after {
+        content: '';
+        width: 0;
+        height: 0;
+        border-top: 7px solid transparent;
+        border-left: 12px solid white;
+        border-bottom: 7px solid transparent;
+        margin-left: 2px;
+      }
+      .audio-message .play-button.playing::after {
+        content: '';
+        width: 10px;
+        height: 10px;
+        background-color: white;
+        border: none;
       }
       .audio-message .audio-info {
         flex: 1;
       }
-      .audio-message .audio-title {
-        font-size: 14px;
-        font-weight: bold;
-        margin-bottom: 2px;
-      }
-      .audio-message .audio-duration {
-        font-size: 12px;
-        color: #666;
-      }
       .audio-message .audio-wave {
         display: flex;
         align-items: center;
-        height: 20px;
-        margin-top: 4px;
+        height: 30px;
+        width: 100%;
       }
       .audio-message .audio-wave span {
         display: inline-block;
         width: 2px;
-        height: 100%;
+        margin-right: 1px;
         background-color: #075E54;
-        margin-right: 2px;
-        animation: wave 1.5s infinite ease-in-out;
+        border-radius: 2px;
       }
-      .audio-message .audio-wave span:nth-child(2) {
-        animation-delay: 0.2s;
-        height: 80%;
+      .bot-recording-indicator {
+        background-color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        align-self: flex-start;
+        max-width: 40px;
+        position: relative;
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
       }
-      .audio-message .audio-wave span:nth-child(3) {
-        animation-delay: 0.4s;
-        height: 60%;
+      .bot-recording-indicator::after {
+        content: '';
+        position: absolute;
+        left: -8px;
+        top: 8px;
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-right: 8px solid white;
+        border-bottom: 8px solid transparent;
       }
-      .audio-message .audio-wave span:nth-child(4) {
-        animation-delay: 0.6s;
-        height: 80%;
+      .bot-recording-img {
+        width: 32px;
+        height: 32px;
+        animation: pulse 1.5s infinite ease-in-out;
       }
-      .audio-message .audio-wave span:nth-child(5) {
-        animation-delay: 0.8s;
-        height: 100%;
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.3; }
       }
-      @keyframes wave {
-        0%, 100% { height: 50%; }
-        50% { height: 100%; }
+      .buy-options {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 15px;
       }
     </style>
   </head>
@@ -374,6 +401,30 @@
       let uploadedComprovante = null;
       let comprovanteUploaded = false;
       let isWaitingWhatsappNumber = false;
+      let activeAudio = null;
+      let audioEndListener = null;
+
+      // Áudios de agradecimento
+      const audioAgradecimento1 = new Audio('agradecimento1.mp3');
+      const audioAgradecimento2 = new Audio('agradecimento2.mp3');
+
+      [audioAgradecimento1, audioAgradecimento2].forEach(audio => {
+        audio.addEventListener('play', function() {
+          if (activeAudio && activeAudio !== this) {
+            activeAudio.pause();
+            const playButtons = document.querySelectorAll('.play-button');
+            playButtons.forEach(btn => btn.classList.remove('playing'));
+          }
+          activeAudio = this;
+          const playButton = document.querySelector(`audio[src="${this.src}"]`)?.parentElement.querySelector('.play-button');
+          if (playButton) playButton.classList.add('playing');
+        });
+        audio.addEventListener('ended', function() {
+          const playButton = document.querySelector(`audio[src="${this.src}"]`)?.parentElement.querySelector('.play-button');
+          if (playButton) playButton.classList.remove('playing');
+          if (audioEndListener) { audioEndListener(); audioEndListener = null; }
+        });
+      });
 
       const actionButton = document.getElementById('actionButton');
       const actionIcon = document.getElementById('actionIcon');
@@ -749,41 +800,59 @@ Larissa:`;
           `;
           appendMessage("bot", successHTML);
           
-          // Adicionar o áudio de agradecimento após um pequeno delay
-          setTimeout(() => {
-            showAudioMessage(currentPackage === 'completo' ? 'agradecimento2.mp3' : 'agradecimento1.mp3');
-          }, 2000);
+          // Adicionar o áudio de agradecimento com o novo formato e delay
+          const recordingEl = document.createElement("div");
+          recordingEl.className = "bot-recording-indicator";
+          recordingEl.innerHTML = `<img src="gravabot.webp" class="bot-recording-img">`;
+          document.getElementById("chatBody").appendChild(recordingEl);
+          document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight;
+          
+          // Delay de 3 segundos simulando gravação
+          await new Promise(r => setTimeout(r, 3000));
+          recordingEl.remove();
+          
+          // Mostrar o áudio de agradecimento
+          showAudioMessage(currentPackage === 'completo' ? audioAgradecimento2 : audioAgradecimento1);
         } else {
           showComprovanteError();
         }
       }
 
-      function showAudioMessage(audioFile) {
+      function showAudioMessage(audio) {
         const audioHTML = `
           <div class="audio-message">
-            <img src="gravabot.webp" alt="Áudio">
+            <div class="play-button" onclick="toggleAudio(this)"></div>
             <div class="audio-info">
-              <div class="audio-title">Áudio de agradecimento</div>
-              <div class="audio-duration">0:10</div>
               <div class="audio-wave">
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
+                ${Array.from({length: 50}, () =>
+                  `<span style="height:${Math.random() * 20 + 5}px"></span>`
+                ).join('')}
               </div>
             </div>
+            <audio src="${audio.src}" style="display:none"></audio>
           </div>
         `;
         
         appendMessage("bot", audioHTML);
         
-        // Simular o áudio sendo reproduzido (na prática, você implementaria a reprodução real aqui)
+        // Reproduzir automaticamente após um pequeno delay
         setTimeout(() => {
-          const audioElement = document.createElement('audio');
-          audioElement.src = audioFile;
-          audioElement.play().catch(e => console.log("Erro ao reproduzir áudio:", e));
-        }, 1000);
+          const audioElement = document.querySelector(`audio[src="${audio.src}"]`);
+          if (audioElement) {
+            audioElement.play().catch(e => console.log("Auto-play não permitido:", e));
+          }
+        }, 500);
+      }
+
+      function toggleAudio(button) {
+        const audio = button.parentElement.querySelector('audio');
+        if (audio.paused) {
+          audio.play();
+          button.classList.add('playing');
+        } else {
+          audio.pause();
+          button.classList.remove('playing');
+        }
       }
 
       function showComprovanteError() {
@@ -1362,6 +1431,55 @@ Larissa:`;
         msgEl.innerHTML = message;
         chatBody.appendChild(msgEl);
         chatBody.scrollTop = chatBody.scrollHeight;
+      }
+
+      async function handleCustomMessage(text) {
+        const systemPrompt = buildSystemPrompt(text);
+        const finalPrompt = systemPrompt + "\n\nCliente: " + text + "\nLarissa:";
+        try {
+          showTypingIndicator();
+          const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: finalPrompt }] }]
+            })
+          });
+          const data = await res.json();
+          hideTypingIndicator();
+          let reply = "Não entendi. Pode reformular?";
+          if (!data.error && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
+            reply = data.candidates[0].content.parts[0].text.trim();
+          }
+          await simulateTyping(reply);
+          const postIntent = detectPurchaseIntent(reply);
+          if (postIntent) {
+            if (postIntent.package === 'completo') {
+              currentPackage = 'completo';
+              appendMessage("bot", `
+                <div class="option-buttons">
+                  <button class="option-button" onclick="handleOptionClick('Me mostra o Pacote Completo')">🎀 Me mostra o Pacote Completo</button>
+                  <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">👩‍🍳 As 50 Receitas</button>
+                </div>`);
+            } else {
+              currentPackage = 'basico';
+              appendMessage("bot", `
+                <div class="option-buttons">
+                  <button class="option-button" onclick="handleOptionClick('Me mostra o Pacote Completo')">🎀 Me mostra o Pacote Completo</button>
+                  <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">👩‍🍳 As 50 Receitas</button>
+                </div>`);
+            }
+          }
+        } catch (err) {
+          hideTypingIndicator();
+          appendMessage("bot", "Erro ao processar. Tente novamente.");
+          appendMessage("bot", `
+            <div class="option-buttons">
+              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">👩‍🍳 As 50 Receitas</button>
+              <button class="option-button" onclick="handleOptionClick('Me mostra o Pacote Completo')">🎀 Me mostra o Pacote Completo</button>
+              <button class="option-button" onclick="handleOptionClick('Grupo Grátis no WhatsApp')">💚 Grupo Grátis no WhatsApp</button>
+            </div>`);
+        }
       }
     </script>
   </body>
