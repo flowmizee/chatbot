@@ -618,8 +618,7 @@ Regras de botões:
 - Se fora do escopo, responda: "Esse assunto foge um pouco do que eu costumo compartilhar por aqui, mas posso te ajudar com receitas incríveis sem glúten e sem lactose! 💙"
 
 Contexto: ${lastOptionSelected ? 'última seleção: ' + lastOptionSelected : 'início'}.
-Cliente: ${userMessage}
-Larissa:`;
+Cliente: ${userMessage}`;
         return prompt;
       }
 
@@ -653,15 +652,6 @@ Larissa:`;
         else if (option === 'Grupo Grátis no WhatsApp') {
           await simulateTyping("Me manda seu número de WhatsApp com DDD (exemplo: 11999999999), que eu vou te colocar no nosso Grupo Free do WhasApp com receitinhas, dicas e conteúdos exclusivos. Eles são animadinhos! 🤭👇🏻");
           appendMessage("bot", `<img src="grupo.webp" alt="Grupo WhatsApp" class="preview-image">`);
-          await simulateTyping("No grupo você recebe:<br>• Receitas exclusivas grátis<br>• Dicas de ingredientes<br>• Novidades sobre alimentação saudável<br>• Comunidade de pessoas com interesses similares<br>• Avisos de promoções e lançamentos");
-          await simulateTyping("Se preferir não passar agora, tá tudo bem! Você pode continuar por aqui mesmo escolhendo uma das opções abaixo.");
-          
-          appendMessage("bot", `
-            <div class="option-buttons">
-              <button class="option-button" onclick="handleOptionClick('Me mostra o Pacote Completo')">🎀 Me mostra o Pacote Completo</button>
-              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">👩‍🍳 As 50 Receitas</button>
-            </div>`);
-          
           isWaitingWhatsappNumber = true;
         }
       }
@@ -948,7 +938,7 @@ Larissa:`;
           await new Promise(r => setTimeout(r, 3000));
           recordingEl.remove();
           
-          // Mostrar o áudio de agradecimento
+          // Mostrar o áudio de agradecimento (sem reprodução automática)
           showAudioMessage(currentPackage === 'completo' ? audioAgradecimento2 : audioAgradecimento1);
         } else {
           showComprovanteError();
@@ -971,14 +961,6 @@ Larissa:`;
         `;
         
         appendMessage("bot", audioHTML);
-        
-        // Reproduzir automaticamente após um pequeno delay
-        setTimeout(() => {
-          const audioElement = document.querySelector(`audio[src="${audio.src}"]`);
-          if (audioElement) {
-            audioElement.play().catch(e => console.log("Auto-play não permitido:", e));
-          }
-        }, 500);
       }
 
       function showComprovanteError() {
@@ -1579,7 +1561,7 @@ Larissa:`;
 
       async function handleCustomMessage(text) {
         const systemPrompt = buildSystemPrompt(text);
-        const finalPrompt = systemPrompt + "\n\nCliente: " + text + "\nLarissa:";
+        const finalPrompt = systemPrompt + "\n\nCliente: " + text;
         try {
           showTypingIndicator();
           const res = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
@@ -1594,6 +1576,8 @@ Larissa:`;
           let reply = "Não entendi. Pode reformular?";
           if (!data.error && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
             reply = data.candidates[0].content.parts[0].text.trim();
+            // Remover possíveis prefixos "Larissa:" ou "Cliente:" que a IA possa ter adicionado
+            reply = reply.replace(/^(Larissa:|Cliente:)\s*/i, '');
           }
           await simulateTyping(reply);
           const postIntent = detectPurchaseIntent(reply);
