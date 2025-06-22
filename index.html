@@ -652,6 +652,14 @@ Cliente: ${userMessage}`;
         else if (option === 'Grupo Grátis no WhatsApp') {
           await simulateTyping("Me manda seu número de WhatsApp com DDD (exemplo: 11999999999), que eu vou te colocar no nosso Grupo Free do WhasApp com receitinhas, dicas e conteúdos exclusivos. Eles são animadinhos! 🤭👇🏻");
           appendMessage("bot", `<img src="grupo.webp" alt="Grupo WhatsApp" class="preview-image">`);
+          await simulateTyping("Se preferir não passar agora, tá tudo bem! Você pode continuar por aqui mesmo escolhendo uma das opções abaixo.");
+          
+          appendMessage("bot", `
+            <div class="option-buttons">
+              <button class="option-button" onclick="handleOptionClick('Me mostra o Pacote Completo')">🎀 Me mostra o Pacote Completo</button>
+              <button class="option-button" onclick="handleOptionClick('As 50 Receitas')">👩‍🍳 As 50 Receitas</button>
+            </div>`);
+          
           isWaitingWhatsappNumber = true;
         }
       }
